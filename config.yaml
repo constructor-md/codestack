@@ -30,7 +30,7 @@ params:
   BookSection: docs
 
   # 源代码仓库位置 用于显示最后修改时间和编辑此页面的链接
-  BookRepo: https://github.com/hadyang/interview
+  BookRepo: https://github.com/constructor-md/codestack
 
   # 页面上使用的日期的格式配置
   BookDateFormat: '2006-01-02'
