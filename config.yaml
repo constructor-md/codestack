@@ -11,7 +11,7 @@ theme: hugo-book
 # 禁用路径自动转小写
 disablePathToLower: true
 # 允许Hugo页面通过Github获取文件编辑时间等信息
-#enableGitInfo: true
+enableGitInfo: true
 
 # Code highlight
 # 开启代码围栏功能
@@ -30,7 +30,7 @@ params:
   BookSection: docs
 
   # 源代码仓库位置 用于显示最后修改时间和编辑此页面的链接
-  #BookRepo: https://github.com/hadyang/interview
+  BookRepo: https://github.com/hadyang/interview
 
   # 页面上使用的日期的格式配置
   BookDateFormat: '2006-01-02'
