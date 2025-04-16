@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>CodeStack</title>
-    <link>http://localhost:1313/codestack/</link>
+    <link>https://constructor-md.github.io/codestack/</link>
     <description>Recent content on CodeStack</description>
     <generator>Hugo</generator>
     <language>zh-CN</language>
-    <lastBuildDate>Tue, 15 Apr 2025 12:00:00 +0000</lastBuildDate>
-    <atom:link href="http://localhost:1313/codestack/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 16 Apr 2025 16:05:48 +0800</lastBuildDate>
+    <atom:link href="https://constructor-md.github.io/codestack/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>My First Post</title>
-      <link>http://localhost:1313/codestack/docs/my-first-post/</link>
+      <link>https://constructor-md.github.io/codestack/docs/my-first-post/</link>
       <pubDate>Tue, 15 Apr 2025 12:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/codestack/docs/my-first-post/</guid>
+      <guid>https://constructor-md.github.io/codestack/docs/my-first-post/</guid>
       <description>&lt;p&gt;这是我的第一篇博客文章。&lt;/p&gt;&#xA;&lt;p&gt;欢迎来到我的博客！AAAAAAA&lt;/p&gt;</description>
     </item>
   </channel>
