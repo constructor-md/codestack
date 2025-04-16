@@ -1,0 +1,39 @@
+# 部署时访问的链接
+baseURL: https://constructor-md.github.io/codestack
+# 网站语言
+languageCode: zh-CN
+# 标题
+title: CodeStack
+# 主题
+theme: hugo-book
+
+# Book configuration
+# 禁用路径自动转小写
+disablePathToLower: true
+# 允许Hugo页面通过Github获取文件编辑时间等信息
+#enableGitInfo: true
+
+# Code highlight
+# 开启代码围栏功能
+pygmentsCodeFences: true
+# 禁用分类和分类术语页面的生成
+disableKinds: ['taxonomy', 'taxonomyTerm']
+
+params:
+  # 页面上显示的目录层级为3级
+  BookToC: 3
+
+  # 用于渲染侧边菜单的文件在/menu
+  BookMenuBundle: /menu
+
+  # 指定将docs内的文件渲染为菜单
+  BookSection: docs
+
+  # 源代码仓库位置 用于显示最后修改时间和编辑此页面的链接
+  #BookRepo: https://github.com/hadyang/interview
+
+  # 页面上使用的日期的格式配置
+  BookDateFormat: '2006-01-02'
+
+  # 开启文章搜索功能
+  BookSearch: true
