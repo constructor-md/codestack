@@ -4,3 +4,4 @@ _book
 public/
 interview_book/
 resources
+.hugo_build.lock
