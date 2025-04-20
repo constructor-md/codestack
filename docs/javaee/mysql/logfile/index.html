@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
-<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+<head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="
@@ -82,20 +82,21 @@ undo log是逻辑日志，每次修改数据，undolog中出现一条反操作�
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/logfile/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/mysql/logfile/">
   <meta property="og:site_name" content="CodeStack">
   <meta property="og:title" content="日志文件及作用">
   <meta property="og:description" content="日志文件及作用#error.log 错误日志：#对MySQL的启动、运行、关闭过程进行了记录用于问题的排查，如例如权限问题、配置错误、磁盘空间不足slow.log 慢查询日志：#可通过slow_query_log_file参数在配置文件中指定文件名，若未指定，默认在数据目录下，文件名为hostname-slow.log默认情况下不启动慢查询日志，需要手动设置用于定位执行时间超过设置值的SQL，以及没有使用索引的SQL可以通过mysqldupmslow查找和筛选慢查询日志的内容查询日志：#其文件名可通过general_log_file参数在配置文件中指定，若未指定，默认在数据目录下，文件名为hostname.log记录了所有对MySQL数据库请求的信息，不论是否得到了正确执行但由于会记录所有语句，开启该日志会对性能产生较大影响，所以通常只在调试或测试环境中开启二进制日志bin.log#二进制日志由一系列文件组成，文件名格式为binlog.xxxxxx ，其中xxxxxx是一个 6 位的数字序号，从 000001 开始递增。其文件名前缀可通过log_bin参数在配置文件中指定记录了所有对MySQL数据库进行的更改作用：数据恢复，数据库全备文件恢复主从复制，通过复制和执行二进制日志，使从库和主库实时同步审计判断是否有对数据库攻击中继日志（Relay Log）#文件名格式为relay-log.xxxxxx ，其中xxxxxx是一个 6 位的数字序号，从 000001 开始递增。文件名前缀可通过relay_log参数在配置文件中指定。作用：在主从复制架构中，从服务器从主服务器接收二进制日志内容后，会将其存储在中继日志中从服务器的 SQL 线程会读取中继日志中的内容，并在本地执行相应的 SQL 语句，从而实现数据的同步事务日志（Innodb）#Redo log:#默认文件名为ib_logfile0、ib_logfile1等，可通过innodb_log_files_in_group参数指定日志文件的数量，通过innodb_log_file_size参数指定每个日志文件的大小。用于保证事务的持久性MySQL中有大量缓存，数据修改时首先更新缓存，但是缓存并非马上同步到磁盘，即为脏页但是数据库如果宕机，则内存数据丢失，重启无法恢复所以每次修改内存就要写redo log，redo log顺序写入，磁盘的顺序读写速度远快于随机读写，写操作对性能影响较小Redo log是物理日志，记录数据页的物理修改，用于恢复提交后的物理数据页如果数据库意外重启，会根据redo log进行数据恢复如果redo log有事务提交，则提交事务修改数据。也仅能恢复到数据最后提交的状态可以利用 Redo Log 将未写入磁盘的数据页恢复到崩溃前的状态Undo log:#InnoDB Undo Log 没有单独的文件名，它是存储在系统表空间（ibdata1）或独立的 undo 表空间中的。可通过innodb_undo_tablespaces参数指定独立 undo 表空间的数量undo log是逻辑日志，每次修改数据，undolog中出现一条反操作的记录可以用于事务回滚，也可以根据undolog回溯到某个特定版本的数据用于实现事务的原子性和多版本并发控制（MVCC）在事务执行过程中，Undo Log 会记录数据修改前的状态，当事务需要回滚时，可以根据 Undo Log 将数据恢复到事务开始前的状态同时，MVCC 通过 Undo Log 提供数据的多个版本，使得不同事务可以同时访问同一数据的不同版本，提高并发性能">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-04-20T20:15:11+08:00">
 <title>日志文件及作用 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/logfile/">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/logfile/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.2e36efccd5125058c886cd7e90119bec6c60dc7a11aa267c4e8ad7bb0584a8f6.js" integrity="sha256-LjbvzNUSUFjIhs1&#43;kBGb7Gxg3HoRqiZ8TorXuwWEqPY=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.fa492ebe2184a348cfd2f4c00528dcf7b6da039507cfcc2ea9b0fbb3eb79335a.js" integrity="sha256-&#43;kkuviGEo0jP0vTABSjc97baA5UHz8wuqbD7s&#43;t5M1o=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -599,6 +600,12 @@ undo log是逻辑日志，每次修改数据，undolog中出现一条反操作�
         
   <div class="flex flex-wrap justify-between">
 
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/b7676f6deeeb6334715757b962e6352e17ddfaef" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-04-20</span>
+    </a>
+  </div>
 
 
 

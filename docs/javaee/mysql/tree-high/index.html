@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
-<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+<head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="
@@ -57,7 +57,7 @@ hexdump -C -s 49216 -n 10 goods_info_100M.ibd
 前两个字节是PAGE_LEVEL，所以这个索引树高度为3&#43;1 = 4">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/tree-high/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/mysql/tree-high/">
   <meta property="og:site_name" content="CodeStack">
   <meta property="og:title" content="索引树高度计算">
   <meta property="og:description" content="索引树高度计算#基本原理#Innodb是索引组织表，每个页都包含一个PAGE_LEVEL，表示当前页在索引上的高度
@@ -79,13 +79,14 @@ hexdump -C -s 49216 -n 10 goods_info_100M.ibd 前两个字节是PAGE_LEVEL，所
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-04-20T20:15:11+08:00">
 <title>索引树高度计算 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/tree-high/">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/tree-high/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.2e36efccd5125058c886cd7e90119bec6c60dc7a11aa267c4e8ad7bb0584a8f6.js" integrity="sha256-LjbvzNUSUFjIhs1&#43;kBGb7Gxg3HoRqiZ8TorXuwWEqPY=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.fa492ebe2184a348cfd2f4c00528dcf7b6da039507cfcc2ea9b0fbb3eb79335a.js" integrity="sha256-&#43;kkuviGEo0jP0vTABSjc97baA5UHz8wuqbD7s&#43;t5M1o=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -566,6 +567,12 @@ show variables like &#39;datadir&#39;
         
   <div class="flex flex-wrap justify-between">
 
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/b7676f6deeeb6334715757b962e6352e17ddfaef" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-04-20</span>
+    </a>
+  </div>
 
 
 

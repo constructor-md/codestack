@@ -2,10 +2,10 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>计算机基础 on CodeStack</title>
-    <link>http://localhost:1313/codestack/docs/basic/</link>
+    <link>https://constructor-md.github.io/codestack/docs/basic/</link>
     <description>Recent content in 计算机基础 on CodeStack</description>
     <generator>Hugo</generator>
     <language>zh-CN</language>
-    <atom:link href="http://localhost:1313/codestack/docs/basic/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://constructor-md.github.io/codestack/docs/basic/index.xml" rel="self" type="application/rss+xml" />
   </channel>
 </rss>

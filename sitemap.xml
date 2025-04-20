@@ -2,65 +2,70 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>http://localhost:1313/codestack/docs/javaee/spring/</loc>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/spring/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/deploy/ubuntu/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/basic/</loc>
     <lastmod>2025-04-18T15:05:51+08:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/codestack/docs/deploy/ubuntu/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/basic/</loc>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/</loc>
     <lastmod>2025-04-18T15:05:51+08:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/</loc>
+    <loc>https://constructor-md.github.io/codestack/docs/deploy/mysql/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/mysql/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/deploy/redis/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/deploy/elasticsearch/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/deploy/minio/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/mysql/mvcc/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/mysql/logfile/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/mysql/explain/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/mysql/tree-high/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/deploy/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/</loc>
+    <lastmod>2025-04-20T20:15:11+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/basic/net/application/http/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/basic/net/transport/tcp/</loc>
+    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
+  </url><url>
+    <loc>https://constructor-md.github.io/codestack/docs/basic/net/transport/</loc>
     <lastmod>2025-04-18T15:05:51+08:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/codestack/docs/deploy/mysql/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/mysql/</loc>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/deploy/redis/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/deploy/elasticsearch/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/deploy/minio/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/mysql/mvcc/</loc>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/mysql/logfile/</loc>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/mysql/explain/</loc>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/mysql/tree-high/</loc>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/deploy/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/basic/net/application/http/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/basic/net/transport/tcp/</loc>
-    <lastmod>2025-04-20T18:31:30+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/basic/net/transport/</loc>
+    <loc>https://constructor-md.github.io/codestack/docs/javaee/spring/ioc/</loc>
     <lastmod>2025-04-18T15:05:51+08:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/codestack/docs/javaee/spring/ioc/</loc>
-    <lastmod>2025-04-18T15:05:51+08:00</lastmod>
-  </url><url>
-    <loc>http://localhost:1313/codestack/docs/basic/net/application/</loc>
+    <loc>https://constructor-md.github.io/codestack/docs/basic/net/application/</loc>
     <lastmod>2025-04-20T18:31:30+08:00</lastmod>
   </url><url>
-    <loc>http://localhost:1313/codestack/docs/basic/net/</loc>
+    <loc>https://constructor-md.github.io/codestack/docs/basic/net/</loc>
     <lastmod>2025-04-18T15:05:51+08:00</lastmod>
   </url>
 </urlset>
