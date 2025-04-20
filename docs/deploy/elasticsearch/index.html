@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  ElasticSearch
+  #
+
+安装版本：8.15.0
+部署方式：三节点
+运行方式：docker-compose
+
+  Linux系统设置
+  #
+
+# 修改内核参数
+# 设置每个进程最多拥有的最大内存映射区域数量 默认65536对ES来说不足
+echo &#34;vm.max_map_count=262144&#34; | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+  创建目录
+  #
+
+sudo mkdir /DATA/es /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config
+
+  权限设置
+  #
+
+sudo chmod -R 777 /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config
+
+  各单节点启动获取官方配置
+  #
+
+sudo vim /DATA/docker-compose.yml
+
+version: &#39;3&#39;
+services:
+  es:
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+      container_name: es
+      restart: always
+      environment:
+        - &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用
+        - &#34;ELASTIC_PASSWORD=bucunzaide2333&#34;
+        - &#34;TZ=Asia/Shanghai&#34;
+      ports:
+        - &#34;19200:19200&#34;
+        - &#34;19300:19300&#34;
+      volumes:
+        - /DATA/es/data:/usr/share/elasticsearch/data
+        - /DATA/es/logs:/usr/share/elasticsearch/logs
+        - /etc/hosts:/etc/hosts
+        - es_config:/usr/share/elasticsearch/config
+        - /DATA/es/plugins:/usr/share/elasticsearch/plugins
+      ulimits:
+        # mmap 映射内存不限制
+        memlock:
+          soft: -1                  
+          hard: -1
+        # 文件描述符打开个数修改    
+        nofile:                                          
+          soft: 65535                             
+          hard: 65535
+
+
+# 末尾添加 作用是不要让宿主机空目录覆盖
+volumes:
+      es_config:
+        driver: local
+        driver_opts:
+          type: none
+          device: /DATA/es/config
+          o: bind
+
+#mmap 映射内存不限制">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/deploy/elasticsearch/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="ElasticSearch">
+  <meta property="og:description" content="ElasticSearch#安装版本：8.15.0
+部署方式：三节点
+运行方式：docker-compose
+Linux系统设置## 修改内核参数# 设置每个进程最多拥有的最大内存映射区域数量 默认65536对ES来说不足echo &#34;vm.max_map_count=262144&#34; | sudo tee -a /etc/sysctl.confsudo sysctl -p 创建目录#sudo mkdir /DATA/es /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config 权限设置#sudo chmod -R 777 /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config 各单节点启动获取官方配置#sudo vim /DATA/docker-compose.ymlversion: &#39;3&#39;services:es:image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0container_name: esrestart: alwaysenvironment:- &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用- &#34;ELASTIC_PASSWORD=bucunzaide2333&#34;- &#34;TZ=Asia/Shanghai&#34;ports:- &#34;19200:19200&#34;- &#34;19300:19300&#34;volumes:- /DATA/es/data:/usr/share/elasticsearch/data- /DATA/es/logs:/usr/share/elasticsearch/logs- /etc/hosts:/etc/hosts- es_config:/usr/share/elasticsearch/config- /DATA/es/plugins:/usr/share/elasticsearch/pluginsulimits:# mmap 映射内存不限制memlock:soft: -1 hard: -1# 文件描述符打开个数修改 nofile: soft: 65535 hard: 65535# 末尾添加 作用是不要让宿主机空目录覆盖volumes:es_config:driver: localdriver_opts:type: nonedevice: /DATA/es/configo: bind #mmap 映射内存不限制">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-04-20T18:31:30+08:00">
+<title>ElasticSearch | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/deploy/elasticsearch/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.0a7264effd58bb9123c44712059c3550225aeb82faf4f8236f88ba3cf6c4f9ec.js" integrity="sha256-CnJk7/1Yu5EjxEcSBZw1UCJa64L69Pgjb4i6PPbE&#43;ew=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="active">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>ElasticSearch</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#linux系统设置">Linux系统设置</a></li>
+    <li><a href="#创建目录">创建目录</a></li>
+    <li><a href="#权限设置">权限设置</a></li>
+    <li><a href="#各单节点启动获取官方配置">各单节点启动获取官方配置</a></li>
+    <li><a href="#生成和复制节点间传输层证书">生成和复制节点间传输层证书</a></li>
+    <li><a href="#修改各节点-elasticsearchyml-文件">修改各节点 elasticsearch.yml 文件</a></li>
+    <li><a href="#启动并验证">启动并验证</a></li>
+    <li><a href="#设置内置用户和密码">设置内置用户和密码</a></li>
+    <li><a href="#安装kibana单节点">安装kibana(单节点)</a>
+      <ul>
+        <li><a href="#目录和权限">目录和权限</a></li>
+        <li><a href="#启动kibana">启动kibana</a></li>
+        <li><a href="#修改-kibanayml-配置文件">修改 kibana.yml 配置文件</a></li>
+        <li><a href="#打开防火墙并验证访问">打开防火墙并验证访问</a></li>
+      </ul>
+    </li>
+    <li><a href="#安装ik分词器每个节点都要装">安装IK分词器(每个节点都要装)</a>
+      <ul>
+        <li><a href="#测试ik分词器">测试IK分词器</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="elasticsearch">
+  ElasticSearch
+  <a class="anchor" href="#elasticsearch">#</a>
+</h1>
+<p>安装版本：8.15.0</p>
+<p>部署方式：三节点</p>
+<p>运行方式：docker-compose</p>
+<h2 id="linux系统设置">
+  Linux系统设置
+  <a class="anchor" href="#linux%e7%b3%bb%e7%bb%9f%e8%ae%be%e7%bd%ae">#</a>
+</h2>
+<pre tabindex="0"><code># 修改内核参数
+# 设置每个进程最多拥有的最大内存映射区域数量 默认65536对ES来说不足
+echo &#34;vm.max_map_count=262144&#34; | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+</code></pre><h2 id="创建目录">
+  创建目录
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba%e7%9b%ae%e5%bd%95">#</a>
+</h2>
+<pre tabindex="0"><code>sudo mkdir /DATA/es /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config
+</code></pre><h2 id="权限设置">
+  权限设置
+  <a class="anchor" href="#%e6%9d%83%e9%99%90%e8%ae%be%e7%bd%ae">#</a>
+</h2>
+<pre tabindex="0"><code>sudo chmod -R 777 /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config
+</code></pre><h2 id="各单节点启动获取官方配置">
+  各单节点启动获取官方配置
+  <a class="anchor" href="#%e5%90%84%e5%8d%95%e8%8a%82%e7%82%b9%e5%90%af%e5%8a%a8%e8%8e%b7%e5%8f%96%e5%ae%98%e6%96%b9%e9%85%8d%e7%bd%ae">#</a>
+</h2>
+<pre tabindex="0"><code>sudo vim /DATA/docker-compose.yml
+
+version: &#39;3&#39;
+services:
+  es:
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+      container_name: es
+      restart: always
+      environment:
+        - &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用
+        - &#34;ELASTIC_PASSWORD=bucunzaide2333&#34;
+        - &#34;TZ=Asia/Shanghai&#34;
+      ports:
+        - &#34;19200:19200&#34;
+        - &#34;19300:19300&#34;
+      volumes:
+        - /DATA/es/data:/usr/share/elasticsearch/data
+        - /DATA/es/logs:/usr/share/elasticsearch/logs
+        - /etc/hosts:/etc/hosts
+        - es_config:/usr/share/elasticsearch/config
+        - /DATA/es/plugins:/usr/share/elasticsearch/plugins
+      ulimits:
+        # mmap 映射内存不限制
+        memlock:
+          soft: -1                  
+          hard: -1
+        # 文件描述符打开个数修改    
+        nofile:                                          
+          soft: 65535                             
+          hard: 65535
+
+
+# 末尾添加 作用是不要让宿主机空目录覆盖
+volumes:
+      es_config:
+        driver: local
+        driver_opts:
+          type: none
+          device: /DATA/es/config
+          o: bind
+</code></pre><blockquote>
+<p>#mmap 映射内存不限制</p>
+<p>ES底层lucene底层使用mmap映射磁盘文件</p>
+<p>memlock本意是限制内存映射的大小，默认为64KB，不够，修改为不用限制大小</p>
+<p>#文件描述符打开个数修改</p>
+<p>Elasticsearch 需要打开大量的文件来处理索引数据、日志文件以及网络连接</p>
+<p>如果文件描述符的数量不足，导致“Too many open files” 和频繁的文件关闭和重新打开操作，从而降低性能</p>
+<p>Elasticsearch 官方推荐将   nofile   的   soft   和   hard   值设置为 65535 或更高</p>
+<p>soft  （软限制）：是当前生效的限制值，用户可以动态调整，但不能超过   hard   限制。</p>
+<p>hard  （硬限制）：是系统允许的最大值，用户无法超过这个限制</p></blockquote>
+<pre tabindex="0"><code># 启动 三个节点的es
+sudo docker-compose up -d es
+
+# 验证节点状态
+curl --cacert /DATA/es/config/certs/http_ca.crt -u elastic:bucunzaide2333 https://localhost:19200/_cluster/health?pretty
+</code></pre><h2 id="生成和复制节点间传输层证书">
+  生成和复制节点间传输层证书
+  <a class="anchor" href="#%e7%94%9f%e6%88%90%e5%92%8c%e5%a4%8d%e5%88%b6%e8%8a%82%e7%82%b9%e9%97%b4%e4%bc%a0%e8%be%93%e5%b1%82%e8%af%81%e4%b9%a6">#</a>
+</h2>
+<pre tabindex="0"><code># 进入一个节点的 docker
+sudo docker exec -it es /bin/bash
+
+./bin/elasticsearch-certutil ca
+# Please enter the desired output file [elastic-stack-ca.p12]:
+# 直接空格默认文件名和路径
+# Enter password for elastic-stack-ca.p12 :
+# 设置密码 2333
+
+# 用刚生成的CA证书生成节点证书
+# elastic-stack-ca.p12在/usr/share/elasticsearch 目录下 
+# 在这个目录执行，elastic-certificates.p12也生成在这个目录下
+./bin/elasticsearch-certutil cert --ca elastic-stack-ca.p12
+# Enter password for CA (elastic-stack-ca.p12) : 
+# 输入CA证书的密码 密码 2333
+# Enter password for elastic-certificates.p12 :
+# 输入节点证书的密码，设置密码 2333
+
+# 生成的证书都移动到config/certs目录下
+mv elastic-certificates.p12 config/certs/
+mv elastic-stack-ca.p12 config/certs/
+
+exit
+
+# 各个节点都需要这两个文件 复制到各节点
+scp -P 2222 quanta@192.168.1.11:/DATA/es/config/certs/elastic-certificates.p12 /DATA/es/config/certs
+scp -P 2222 quanta@192.168.1.11:/DATA/es/config/certs/elastic-stack-ca.p12 /DATA/es/config/certs
+
+
+# 密码加入各节点的信任库 覆盖原本的设置y
+# 提示输入节点证书密码 2333
+sudo docker exec -it es /bin/bash
+./bin/elasticsearch-keystore add xpack.security.transport.ssl.keystore.secure_password
+./bin/elasticsearch-keystore add xpack.security.transport.ssl.truststore.secure_password
+
+exit
+
+# https证书保持各节点自己的 各类客户端访问不使用https
+# 检查https是否可以访问 curl访问-k跳过证书验证 浏览器https高级继续 （不认自签名证书）
+curl -k --cacert /DATA/es/config/certs/http_ca.crt -u elastic:bucunzaide2333 https://localhost:19200/_cluster/health?pretty
+</code></pre><h2 id="修改各节点-elasticsearchyml-文件">
+  修改各节点 elasticsearch.yml 文件
+  <a class="anchor" href="#%e4%bf%ae%e6%94%b9%e5%90%84%e8%8a%82%e7%82%b9-elasticsearchyml-%e6%96%87%e4%bb%b6">#</a>
+</h2>
+<pre tabindex="0"><code>sudo vim /DATA/es/config/elasticsearch.yml
+
+# 集群名称 每个节点相同 根据他生成 cluster_uuid
+# cluster_uuid 相同的加入同一个集群，修改后只能删除data目录重来
+cluster.name: &#34;es-cluster&#34;
+# 节点名称 每个节点不同
+node.name: &#34;es-node1&#34;
+# 节点主机名 在/etc/hosts换节点ip用
+network.publish_host: dataserver1
+network.host: 0.0.0.0
+transport.port: 19300
+http.port: 19200
+
+#----------------------- BEGIN SECURITY AUTO CONFIGURATION -----------------------
+#
+# The following settings, TLS certificates, and keys have been automatically      
+# generated to configure Elasticsearch security features on 28-02-2025 09:24:45
+#
+# --------------------------------------------------------------------------------
+
+# Enable security features
+xpack.security.enabled: true
+
+xpack.security.enrollment.enabled: true
+
+# Enable encryption for HTTP API client connections, such as Kibana, Logstash, and Agents
+# 关闭https访问
+xpack.security.http.ssl:
+  enabled: false
+  keystore.path: certs/http.p12
+
+# Enable encryption and mutual authentication between cluster nodes
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  keystore.path: certs/elastic-certificates.p12
+  truststore.path: certs/elastic-certificates.p12
+
+
+# Create a new cluster with the current node only
+# Additional nodes can still join the cluster later
+cluster.initial_master_nodes: [&#34;es-node1&#34;, &#34;es-node2&#34;, &#34;es-node3&#34;]
+discovery.seed_hosts: [&#34;dataserver1&#34;, &#34;dataserver2&#34;, &#34;dataserver3&#34;]
+#----------------------- END SECURITY AUTO CONFIGURATION -------------------------
+
+
+
+# 节点间复制并修改节点名和publish_host
+scp -P 2222 user@ip:/DATA/es/config/elasticsearch.yml /DATA/es/config/elasticsearch.yml
+sudo vim /DATA/es/config/elasticsearch.yml
+
+# 修改各节点防火墙
+sudo ufw allow 19200/tcp 
+sudo ufw allow 19300/tcp
+sudo ufw delete allow 9200/tcp 
+sudo ufw delete allow 9300/tcp
+# 重启各节点
+sudo docker-compose down es
+# 删除 data目录下的内容 因为修改了cluster_name
+sudo rm -rf /DATA/es/data/*
+sudo docker-compose up -d es
+</code></pre><h2 id="启动并验证">
+  启动并验证
+  <a class="anchor" href="#%e5%90%af%e5%8a%a8%e5%b9%b6%e9%aa%8c%e8%af%81">#</a>
+</h2>
+<pre tabindex="0"><code>sudo docker-compose up -d es
+
+# 验证节点状态
+curl -u elastic:bucunzaide2333 http://localhost:19200/_cluster/health?pretty
+{
+  &#34;cluster_name&#34; : &#34;docker-cluster&#34;,
+  #  green  ：所有主分片和副本分片都已分配，集群状态良好。
+  #  yellow  ：所有主分片已分配，但部分副本分片未分配。
+  #  red  ：部分主分片未分配，集群状态不佳
+  &#34;status&#34; : &#34;green&#34;,
+  # 本次查询是否超时
+  &#34;timed_out&#34; : false,
+  # 集群节点数量
+  &#34;number_of_nodes&#34; : 3,
+  # 集群数据节点数量
+  &#34;number_of_data_nodes&#34; : 3,
+  &#34;active_primary_shards&#34; : 0,
+  &#34;active_shards&#34; : 0,
+  &#34;relocating_shards&#34; : 0,
+  &#34;initializing_shards&#34; : 0,
+  &#34;unassigned_shards&#34; : 0,
+  &#34;delayed_unassigned_shards&#34; : 0,
+  &#34;number_of_pending_tasks&#34; : 0,
+  &#34;number_of_in_flight_fetch&#34; : 0,
+  &#34;task_max_waiting_in_queue_millis&#34; : 0,
+  &#34;active_shards_percent_as_number&#34; : 100.0
+}
+curl -u elastic:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
+192.168.1.13 13 71 2 0.07 0.31 0.22 cdfhilmrstw - es-node3
+192.168.1.12 14 71 2 0.24 0.38 0.26 cdfhilmrstw - es-node2
+192.168.1.11 18 53 2 0.07 0.30 0.22 cdfhilmrstw * es-node1
+</code></pre><h2 id="设置内置用户和密码">
+  设置内置用户和密码
+  <a class="anchor" href="#%e8%ae%be%e7%bd%ae%e5%86%85%e7%bd%ae%e7%94%a8%e6%88%b7%e5%92%8c%e5%af%86%e7%a0%81">#</a>
+</h2>
+<pre tabindex="0"><code>sudo docker exec -it es /bin/bash
+
+./bin/elasticsearch-reset-password -i -u kibana_system
+
+# 多节点验证是否可以登录
+curl -u kibana_system:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
+</code></pre><blockquote>
+<p>用户和密码单独索引在security
+数据目录挂载出来的情况下可以在docker重启后沿用</p></blockquote>
+<h2 id="安装kibana单节点">
+  安装kibana(单节点)
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85kibana%e5%8d%95%e8%8a%82%e7%82%b9">#</a>
+</h2>
+<h3 id="目录和权限">
+  目录和权限
+  <a class="anchor" href="#%e7%9b%ae%e5%bd%95%e5%92%8c%e6%9d%83%e9%99%90">#</a>
+</h3>
+<pre tabindex="0"><code>sudo mkdir -p /DATA/kibana/config /DATA/kibana/data
+sudo chmod -R 777 /DATA/kibana/config /DATA/kibana/data
+</code></pre><h3 id="启动kibana">
+  启动kibana
+  <a class="anchor" href="#%e5%90%af%e5%8a%a8kibana">#</a>
+</h3>
+<pre tabindex="0"><code>sudo vim /DATA/docker-compose.yml
+
+version: &#39;3&#39;
+services:
+  kibana:
+      image: kibana:8.15.0
+      container_name: kibana
+      restart: always
+      environment:
+        - &#34;TZ=Asia/Shanghai&#34;
+      ports:
+        - &#34;15601:15601&#34;
+      volumes:
+      - kibana_config:/usr/share/kibana/config
+      - /DATA/kibana/data:/usr/share/kibana/data
+      - /etc/hosts:/etc/hosts
+
+
+volumes:
+      kibana_config:
+        driver: local
+        driver_opts:
+          type: none
+          device: /DATA/kibana/config
+          o: bind
+
+sudo docker-compose up -d kibana
+</code></pre><h3 id="修改-kibanayml-配置文件">
+  修改 kibana.yml 配置文件
+  <a class="anchor" href="#%e4%bf%ae%e6%94%b9-kibanayml-%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6">#</a>
+</h3>
+<pre tabindex="0"><code>sudo vim /DATA/kibana/config/kibana.yml
+
+server.host: &#34;0.0.0.0&#34;
+server.port: 15601
+server.shutdownTimeout: &#34;5s&#34;
+elasticsearch.hosts: [ &#34;http://dataserver1:19200&#34; ]
+elasticsearch.username: &#34;kibana_system&#34;
+elasticsearch.password: &#34;bucunzaide2333&#34;
+i18n.locale: &#34;en&#34;
+monitoring.ui.container.elasticsearch.enabled: true
+
+
+sudo docker-compose restart kibana
+</code></pre><h3 id="打开防火墙并验证访问">
+  打开防火墙并验证访问
+  <a class="anchor" href="#%e6%89%93%e5%bc%80%e9%98%b2%e7%81%ab%e5%a2%99%e5%b9%b6%e9%aa%8c%e8%af%81%e8%ae%bf%e9%97%ae">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw allow 15601/tcp
+
+http://192.168.1.11:15601/
+
+# 在 dev_tools 中尝试查询
+# es集群健康状态
+GET _cat/health?v
+# es集群节点个数
+GET _cat/nodes?v
+# es 集群索引
+GET _cat/indices?v
+# 查看插件列表
+GET /_cat/plugins?v
+</code></pre><h2 id="安装ik分词器每个节点都要装">
+  安装IK分词器(每个节点都要装)
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85ik%e5%88%86%e8%af%8d%e5%99%a8%e6%af%8f%e4%b8%aa%e8%8a%82%e7%82%b9%e9%83%bd%e8%a6%81%e8%a3%85">#</a>
+</h2>
+<pre tabindex="0"><code># 安装 每个节点都需要装
+sudo docker exec -it es /bin/bash
+bin/elasticsearch-plugin install https://get.infini.cloud/elasticsearch/analysis-ik/8.15.0
+exit
+# 重启es
+sudo docker-compose restart es
+
+# 移除 ik 分词器
+./bin/elasticsearch-plugin remove analysis-ik
+
+# kibana 查看插件列表
+GET /_cat/plugins?v
+name     component   version
+es-node2 analysis-ik 8.15.0
+es-node1 analysis-ik 8.15.0
+es-node3 analysis-ik 8.15.0
+</code></pre><h3 id="测试ik分词器">
+  测试IK分词器
+  <a class="anchor" href="#%e6%b5%8b%e8%af%95ik%e5%88%86%e8%af%8d%e5%99%a8">#</a>
+</h3>
+<p>ik分词器提供了两种分词方式</p>
+<pre tabindex="0"><code># ik_smart 智能分词
+# 会做最粗粒度的拆分, 比如会将&#34;中华国歌&#34;分成如下&#34;中华&#34;, “国歌”
+# 适合 Phrase 查询
+POST /_analyze
+{
+  &#34;analyzer&#34;: &#34;ik_smart&#34;,
+  &#34;text&#34;: &#34;我爱北京天安门&#34;
+}
+
+# result
+# 我 爱 北京 天安门
+{
+  &#34;tokens&#34;: [
+    {
+      &#34;token&#34;: &#34;我&#34;,
+      &#34;start_offset&#34;: 0,
+      &#34;end_offset&#34;: 1,
+      &#34;type&#34;: &#34;CN_CHAR&#34;,
+      &#34;position&#34;: 0
+    },
+    {
+      &#34;token&#34;: &#34;爱&#34;,
+      &#34;start_offset&#34;: 1,
+      &#34;end_offset&#34;: 2,
+      &#34;type&#34;: &#34;CN_CHAR&#34;,
+      &#34;position&#34;: 1
+    },
+    {
+      &#34;token&#34;: &#34;北京&#34;,
+      &#34;start_offset&#34;: 2,
+      &#34;end_offset&#34;: 4,
+      &#34;type&#34;: &#34;CN_WORD&#34;,
+      &#34;position&#34;: 2
+    },
+    {
+      &#34;token&#34;: &#34;天安门&#34;,
+      &#34;start_offset&#34;: 4,
+      &#34;end_offset&#34;: 7,
+      &#34;type&#34;: &#34;CN_WORD&#34;,
+      &#34;position&#34;: 3
+    }
+  ]
+}
+
+
+# ik_max_word 是最细粒度的分词模式，会尽可能多地输出分词结果 穷举所有可能 中文语法下的
+# 适合 Term Query 查询
+POST /_analyze
+{
+  &#34;analyzer&#34;: &#34;ik_max_word&#34;,
+  &#34;text&#34;: &#34;我爱北京天安门&#34;
+}
+
+# result
+# 我 爱 北京 天安门 天安 门
+{
+  &#34;tokens&#34;: [
+    {
+      &#34;token&#34;: &#34;我&#34;,
+      &#34;start_offset&#34;: 0,
+      &#34;end_offset&#34;: 1,
+      &#34;type&#34;: &#34;CN_CHAR&#34;,
+      &#34;position&#34;: 0
+    },
+    {
+      &#34;token&#34;: &#34;爱&#34;,
+      &#34;start_offset&#34;: 1,
+      &#34;end_offset&#34;: 2,
+      &#34;type&#34;: &#34;CN_CHAR&#34;,
+      &#34;position&#34;: 1
+    },
+    {
+      &#34;token&#34;: &#34;北京&#34;,
+      &#34;start_offset&#34;: 2,
+      &#34;end_offset&#34;: 4,
+      &#34;type&#34;: &#34;CN_WORD&#34;,
+      &#34;position&#34;: 2
+    },
+    {
+      &#34;token&#34;: &#34;天安门&#34;,
+      &#34;start_offset&#34;: 4,
+      &#34;end_offset&#34;: 7,
+      &#34;type&#34;: &#34;CN_WORD&#34;,
+      &#34;position&#34;: 3
+    },
+    {
+      &#34;token&#34;: &#34;天安&#34;,
+      &#34;start_offset&#34;: 4,
+      &#34;end_offset&#34;: 6,
+      &#34;type&#34;: &#34;CN_WORD&#34;,
+      &#34;position&#34;: 4
+    },
+    {
+      &#34;token&#34;: &#34;门&#34;,
+      &#34;start_offset&#34;: 6,
+      &#34;end_offset&#34;: 7,
+      &#34;type&#34;: &#34;CN_CHAR&#34;,
+      &#34;position&#34;: 5
+    }
+  ]
+}
+</code></pre></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/dba06b7aaa2f0bb735af9ac84c8fa8dd57c97e35" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-04-20</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#linux系统设置">Linux系统设置</a></li>
+    <li><a href="#创建目录">创建目录</a></li>
+    <li><a href="#权限设置">权限设置</a></li>
+    <li><a href="#各单节点启动获取官方配置">各单节点启动获取官方配置</a></li>
+    <li><a href="#生成和复制节点间传输层证书">生成和复制节点间传输层证书</a></li>
+    <li><a href="#修改各节点-elasticsearchyml-文件">修改各节点 elasticsearch.yml 文件</a></li>
+    <li><a href="#启动并验证">启动并验证</a></li>
+    <li><a href="#设置内置用户和密码">设置内置用户和密码</a></li>
+    <li><a href="#安装kibana单节点">安装kibana(单节点)</a>
+      <ul>
+        <li><a href="#目录和权限">目录和权限</a></li>
+        <li><a href="#启动kibana">启动kibana</a></li>
+        <li><a href="#修改-kibanayml-配置文件">修改 kibana.yml 配置文件</a></li>
+        <li><a href="#打开防火墙并验证访问">打开防火墙并验证访问</a></li>
+      </ul>
+    </li>
+    <li><a href="#安装ik分词器每个节点都要装">安装IK分词器(每个节点都要装)</a>
+      <ul>
+        <li><a href="#测试ik分词器">测试IK分词器</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

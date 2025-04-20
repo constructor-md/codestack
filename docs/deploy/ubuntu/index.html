@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  Ubuntu
+  #
+
+采用版本：24.01
+安装过程：全部 Done
+
+  非Root用户上传文件
+  #
+
+# 赋予指定用户组用户在某个文件夹及其子文件夹上传文件的权限
+ sudo chown -R quanta:quanta /DATA
+
+  时区设置
+  #
+
+# 查看当前时区
+timedatectl
+# 查看东八区全称
+timedatectl list-timezones | grep Shanghai
+# 设置时区
+sudo timedatectl set-timezone Asia/Shanghai
+
+  host设置
+  #
+
+便于多主机内网互相访问
+sudo vim /etc/hosts
+
+# 补充相关机器的ip 主机名
+192.168.1.11 dataserver1
+192.168.1.12 dataserver2
+192.168.1.13 dataserver3
+
+  OpenSSH安装
+  #
+
+sudo apt update &amp;&amp; sudo apt upgrade
+sudo apt install openssh-server
+service ssh status
+# 随后可以本机SSH使用安装过程设置的账户密码登录服务器
+
+  修改监听端口
+  #
+
+sudo vi /etc/ssh/sshd_config
+# 内容
+Port 2222
+修改后要重启">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/deploy/ubuntu/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="Ubuntu">
+  <meta property="og:description" content="Ubuntu#采用版本：24.01
+安装过程：全部 Done
+非Root用户上传文件## 赋予指定用户组用户在某个文件夹及其子文件夹上传文件的权限sudo chown -R quanta:quanta /DATA 时区设置## 查看当前时区timedatectl# 查看东八区全称timedatectl list-timezones | grep Shanghai# 设置时区sudo timedatectl set-timezone Asia/Shanghai host设置#便于多主机内网互相访问
+sudo vim /etc/hosts# 补充相关机器的ip 主机名192.168.1.11 dataserver1192.168.1.12 dataserver2192.168.1.13 dataserver3 OpenSSH安装#sudo apt update &amp;&amp; sudo apt upgradesudo apt install openssh-serverservice ssh status# 随后可以本机SSH使用安装过程设置的账户密码登录服务器 修改监听端口#sudo vi /etc/ssh/sshd_config# 内容Port 2222 修改后要重启">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-04-20T18:31:30+08:00">
+<title>Ubuntu | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/deploy/ubuntu/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.0a7264effd58bb9123c44712059c3550225aeb82faf4f8236f88ba3cf6c4f9ec.js" integrity="sha256-CnJk7/1Yu5EjxEcSBZw1UCJa64L69Pgjb4i6PPbE&#43;ew=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="active">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Ubuntu</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#非root用户上传文件">非Root用户上传文件</a></li>
+    <li><a href="#时区设置">时区设置</a></li>
+    <li><a href="#host设置">host设置</a></li>
+    <li><a href="#openssh安装">OpenSSH安装</a>
+      <ul>
+        <li><a href="#修改监听端口">修改监听端口</a></li>
+        <li><a href="#重启">重启</a></li>
+      </ul>
+    </li>
+    <li><a href="#docker安装指定版本">Docker安装(指定版本)</a>
+      <ul>
+        <li><a href="#apt依赖安装">apt依赖安装</a></li>
+        <li><a href="#添加阿里云docker-gpg密钥">添加阿里云docker GPG密钥</a></li>
+        <li><a href="#添加阿里云镜像源">添加阿里云镜像源</a></li>
+        <li><a href="#查看有哪些可安装版本">查看有哪些可安装版本</a></li>
+        <li><a href="#安装最新版">安装最新版</a></li>
+        <li><a href="#安装指定版本">安装指定版本</a></li>
+        <li><a href="#安装检查版本查看">安装检查(版本查看)</a></li>
+        <li><a href="#修改镜像源">修改镜像源</a></li>
+        <li><a href="#限制容器日志大小">限制容器日志大小</a></li>
+        <li><a href="#hello-world">Hello World</a></li>
+        <li><a href="#命令启停">命令启停</a></li>
+        <li><a href="#自动唤醒">自动唤醒</a></li>
+        <li><a href="#开启自启">开启自启</a></li>
+      </ul>
+    </li>
+    <li><a href="#curl安装">Curl安装</a></li>
+    <li><a href="#dockercompose安装指定版本">DockerCompose安装（指定版本）</a>
+      <ul>
+        <li><a href="#指定版本安装">指定版本安装</a></li>
+        <li><a href="#添加docker-compose执行权限">添加Docker Compose执行权限</a></li>
+        <li><a href="#安装检查">安装检查</a></li>
+      </ul>
+    </li>
+    <li><a href="#docker卸载">Docker卸载</a>
+      <ul>
+        <li><a href="#完全卸载docker及安装时自动安装的所有包">完全卸载Docker及安装时自动安装的所有包</a></li>
+        <li><a href="#删除没有删除的相关插件">删除没有删除的相关插件</a></li>
+        <li><a href="#删除docker的相关配置目录">删除docker的相关配置&amp;目录</a></li>
+        <li><a href="#确认docker卸载完毕查看版本">确认docker卸载完毕（查看版本）</a></li>
+        <li><a href="#删除docker相关文件">删除Docker相关文件</a></li>
+      </ul>
+    </li>
+    <li><a href="#防火墙ufw控制">防火墙UFW控制</a>
+      <ul>
+        <li><a href="#查看防火墙状态">查看防火墙状态</a></li>
+        <li><a href="#查看防火墙状态-包括默认规则">查看防火墙状态 包括默认规则</a></li>
+        <li><a href="#设置默认拒绝入站流量">设置默认拒绝入站流量</a></li>
+        <li><a href="#设置默认允许出站流量">设置默认允许出站流量</a></li>
+        <li><a href="#防火墙启停">防火墙启停</a></li>
+        <li><a href="#允许禁用端口">允许/禁用端口</a></li>
+        <li><a href="#删除规则">删除规则</a></li>
+        <li><a href="#防火墙开机自启">防火墙开机自启</a></li>
+        <li><a href="#ifconfig使用安装">ifconfig使用安装</a></li>
+        <li><a href="#扩容磁盘分区扩展提升逻辑卷大小和根目录空间">扩容磁盘（分区扩展+提升逻辑卷大小和根目录空间）</a></li>
+      </ul>
+    </li>
+    <li><a href="#切换用户和修改密码">切换用户和修改密码</a></li>
+    <li><a href="#固定本机内网ip-禁用dhcp">固定本机内网IP 禁用DHCP</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="ubuntu">
+  Ubuntu
+  <a class="anchor" href="#ubuntu">#</a>
+</h1>
+<p>采用版本：24.01</p>
+<p>安装过程：全部 Done</p>
+<h2 id="非root用户上传文件">
+  非Root用户上传文件
+  <a class="anchor" href="#%e9%9d%9eroot%e7%94%a8%e6%88%b7%e4%b8%8a%e4%bc%a0%e6%96%87%e4%bb%b6">#</a>
+</h2>
+<pre tabindex="0"><code># 赋予指定用户组用户在某个文件夹及其子文件夹上传文件的权限
+ sudo chown -R quanta:quanta /DATA
+</code></pre><h2 id="时区设置">
+  时区设置
+  <a class="anchor" href="#%e6%97%b6%e5%8c%ba%e8%ae%be%e7%bd%ae">#</a>
+</h2>
+<pre tabindex="0"><code># 查看当前时区
+timedatectl
+# 查看东八区全称
+timedatectl list-timezones | grep Shanghai
+# 设置时区
+sudo timedatectl set-timezone Asia/Shanghai
+</code></pre><h2 id="host设置">
+  host设置
+  <a class="anchor" href="#host%e8%ae%be%e7%bd%ae">#</a>
+</h2>
+<p>便于多主机内网互相访问</p>
+<pre tabindex="0"><code>sudo vim /etc/hosts
+
+# 补充相关机器的ip 主机名
+192.168.1.11 dataserver1
+192.168.1.12 dataserver2
+192.168.1.13 dataserver3
+</code></pre><h2 id="openssh安装">
+  OpenSSH安装
+  <a class="anchor" href="#openssh%e5%ae%89%e8%a3%85">#</a>
+</h2>
+<pre tabindex="0"><code>sudo apt update &amp;&amp; sudo apt upgrade
+sudo apt install openssh-server
+service ssh status
+# 随后可以本机SSH使用安装过程设置的账户密码登录服务器
+</code></pre><h3 id="修改监听端口">
+  修改监听端口
+  <a class="anchor" href="#%e4%bf%ae%e6%94%b9%e7%9b%91%e5%90%ac%e7%ab%af%e5%8f%a3">#</a>
+</h3>
+<pre tabindex="0"><code>sudo vi /etc/ssh/sshd_config
+# 内容
+Port 2222
+</code></pre><p>修改后要重启</p>
+<h3 id="重启">
+  重启
+  <a class="anchor" href="#%e9%87%8d%e5%90%af">#</a>
+</h3>
+<pre tabindex="0"><code># Ubuntu22版本之前：
+sudo systemctl restart sshd
+# Ubuntu22版本之后：
+sudo systemctl daemon-reload
+sudo systemctl restart ssh.socket
+</code></pre><h2 id="docker安装指定版本">
+  Docker安装(指定版本)
+  <a class="anchor" href="#docker%e5%ae%89%e8%a3%85%e6%8c%87%e5%ae%9a%e7%89%88%e6%9c%ac">#</a>
+</h2>
+<h3 id="apt依赖安装">
+  apt依赖安装
+  <a class="anchor" href="#apt%e4%be%9d%e8%b5%96%e5%ae%89%e8%a3%85">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+</code></pre><h3 id="添加阿里云docker-gpg密钥">
+  添加阿里云docker GPG密钥
+  <a class="anchor" href="#%e6%b7%bb%e5%8a%a0%e9%98%bf%e9%87%8c%e4%ba%91docker-gpg%e5%af%86%e9%92%a5">#</a>
+</h3>
+<pre tabindex="0"><code>curl -fsSL http://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo apt-key add -
+</code></pre><h3 id="添加阿里云镜像源">
+  添加阿里云镜像源
+  <a class="anchor" href="#%e6%b7%bb%e5%8a%a0%e9%98%bf%e9%87%8c%e4%ba%91%e9%95%9c%e5%83%8f%e6%ba%90">#</a>
+</h3>
+<pre tabindex="0"><code>sudo add-apt-repository &#34;deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/linux/ubuntu $(lsb_release -cs) stable&#34;
+
+#更新
+sudo apt-get update
+</code></pre><h3 id="查看有哪些可安装版本">
+  查看有哪些可安装版本
+  <a class="anchor" href="#%e6%9f%a5%e7%9c%8b%e6%9c%89%e5%93%aa%e4%ba%9b%e5%8f%af%e5%ae%89%e8%a3%85%e7%89%88%e6%9c%ac">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt-cache madison docker-ce
+
+# 列出版本
+sudo apt-cache madison docker-ce | awk &#39;{ print $3 }&#39;
+</code></pre><p>第二列是版本号，第三列是存储库的名称</p>
+<p>版本号提取： 第二列的第一行字符串为 5:19.03.9<del>3-0</del>ubuntu-bionic ，那么版本号为 5:19.03.9<del>3-0</del>ubuntu-bionic，版本号字符串必须写全第二列的整个字符串</p>
+<h3 id="安装最新版">
+  安装最新版
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85%e6%9c%80%e6%96%b0%e7%89%88">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt-get install -y docker-ce
+</code></pre><h3 id="安装指定版本">
+  安装指定版本
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85%e6%8c%87%e5%ae%9a%e7%89%88%e6%9c%ac">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt-get install -y docker-ce=5:27.3.1-1~ubuntu.24.04~noble
+</code></pre><h3 id="安装检查版本查看">
+  安装检查(版本查看)
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85%e6%a3%80%e6%9f%a5%e7%89%88%e6%9c%ac%e6%9f%a5%e7%9c%8b">#</a>
+</h3>
+<pre tabindex="0"><code>sudo docker --version
+</code></pre><h3 id="修改镜像源">
+  修改镜像源
+  <a class="anchor" href="#%e4%bf%ae%e6%94%b9%e9%95%9c%e5%83%8f%e6%ba%90">#</a>
+</h3>
+<pre tabindex="0"><code>sudo vim /etc/docker/daemon.json
+
+{
+            &#34;registry-mirrors&#34;: [
+                            &#34;https://docker.m.daocloud.io&#34;
+                                ]
+}
+</code></pre><p>修改后要重启docker</p>
+<pre tabindex="0"><code>sudo systemctl daemon-reload		#重启daemon进程
+sudo systemctl restart docker		#重启docker
+</code></pre><p>检查修改成功</p>
+<pre tabindex="0"><code>sudo docker info
+</code></pre><p><img src="./images/docker-mirror-info.png" alt="镜像源信息" title="镜像源信息"/></p>
+<h3 id="限制容器日志大小">
+  限制容器日志大小
+  <a class="anchor" href="#%e9%99%90%e5%88%b6%e5%ae%b9%e5%99%a8%e6%97%a5%e5%bf%97%e5%a4%a7%e5%b0%8f">#</a>
+</h3>
+<p>不限制会直接打到磁盘爆满</p>
+<pre tabindex="0"><code>sudo vim /etc/docker/daemon.json
+
+{
+  &#34;registry-mirrors&#34;: [&#34;https://docker.m.daocloud.io&#34;],
+  &#34;log-driver&#34;:&#34;json-file&#34;,
+  &#34;log-opts&#34;: {&#34;max-size&#34;:&#34;10k&#34;, &#34;max-file&#34;:&#34;3&#34;}
+}
+
+# 重启docker
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+</code></pre><h3 id="hello-world">
+  Hello World
+  <a class="anchor" href="#hello-world">#</a>
+</h3>
+<pre tabindex="0"><code>sudo docker pull hello-world
+sudo docker run hello-world
+</code></pre><h3 id="命令启停">
+  命令启停
+  <a class="anchor" href="#%e5%91%bd%e4%bb%a4%e5%90%af%e5%81%9c">#</a>
+</h3>
+<pre tabindex="0"><code>sudo systemctl start docker
+sudo systemctl stop docker
+</code></pre><h3 id="自动唤醒">
+  自动唤醒
+  <a class="anchor" href="#%e8%87%aa%e5%8a%a8%e5%94%a4%e9%86%92">#</a>
+</h3>
+<p>默认会开启自动唤醒，stop docker进程时会显示：</p>
+<pre tabindex="0"><code>Stopping &#39;docker.service&#39;, but its triggering units are still active:
+docker.socket
+</code></pre><p>docker被访问时会被自动启动</p>
+<p>一般不会想关闭，如果要关闭：</p>
+<pre tabindex="0"><code>sudo systemctl stop docker.socket
+</code></pre><h3 id="开启自启">
+  开启自启
+  <a class="anchor" href="#%e5%bc%80%e5%90%af%e8%87%aa%e5%90%af">#</a>
+</h3>
+<pre tabindex="0"><code>sudo systemctl enable docker
+</code></pre><h2 id="curl安装">
+  Curl安装
+  <a class="anchor" href="#curl%e5%ae%89%e8%a3%85">#</a>
+</h2>
+<pre tabindex="0"><code>sudo apt install curl
+</code></pre><h2 id="dockercompose安装指定版本">
+  DockerCompose安装（指定版本）
+  <a class="anchor" href="#dockercompose%e5%ae%89%e8%a3%85%e6%8c%87%e5%ae%9a%e7%89%88%e6%9c%ac">#</a>
+</h2>
+<p>与Docker的版本适配关系
+<a href="https://docs.docker.com/compose/releases/release-notes/">https://docs.docker.com/compose/releases/release-notes/</a></p>
+<h3 id="指定版本安装">
+  指定版本安装
+  <a class="anchor" href="#%e6%8c%87%e5%ae%9a%e7%89%88%e6%9c%ac%e5%ae%89%e8%a3%85">#</a>
+</h3>
+<p>docker装的是27.3.1 对应compose版本是2.30.x</p>
+<p>使用2.30.1</p>
+<pre tabindex="0"><code>sudo curl -L &#34;https://github.com/docker/compose/releases/download/v2.30.1/docker-compose-linux-x86_64&#34; -o /usr/local/bin/docker-compose
+</code></pre><p>或者自行下载上传后执行：</p>
+<pre tabindex="0"><code># 下载：到github docker compose上找所需版本包
+https://github.com/docker/compose/releases/download/v2.30.1/docker-compose-linux-x86_64
+https://github.com/docker/compose/releases
+
+# 上传后转移目录
+sudo cp docker-compose-linux-x86_64 /usr/local/bin/docker-compose
+</code></pre><h3 id="添加docker-compose执行权限">
+  添加Docker Compose执行权限
+  <a class="anchor" href="#%e6%b7%bb%e5%8a%a0docker-compose%e6%89%a7%e8%a1%8c%e6%9d%83%e9%99%90">#</a>
+</h3>
+<pre tabindex="0"><code>sudo chmod +x /usr/local/bin/docker-compose
+</code></pre><h3 id="安装检查">
+  安装检查
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85%e6%a3%80%e6%9f%a5">#</a>
+</h3>
+<pre tabindex="0"><code>docker-compose --version
+</code></pre><h2 id="docker卸载">
+  Docker卸载
+  <a class="anchor" href="#docker%e5%8d%b8%e8%bd%bd">#</a>
+</h2>
+<h3 id="完全卸载docker及安装时自动安装的所有包">
+  完全卸载Docker及安装时自动安装的所有包
+  <a class="anchor" href="#%e5%ae%8c%e5%85%a8%e5%8d%b8%e8%bd%bddocker%e5%8f%8a%e5%ae%89%e8%a3%85%e6%97%b6%e8%87%aa%e5%8a%a8%e5%ae%89%e8%a3%85%e7%9a%84%e6%89%80%e6%9c%89%e5%8c%85">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt-get autoremove docker docker-ce docker-engine  docker.io  containerd runc
+</code></pre><h3 id="删除没有删除的相关插件">
+  删除没有删除的相关插件
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4%e6%b2%a1%e6%9c%89%e5%88%a0%e9%99%a4%e7%9a%84%e7%9b%b8%e5%85%b3%e6%8f%92%e4%bb%b6">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt-get autoremove docker-ce-*
+</code></pre><h3 id="删除docker的相关配置目录">
+  删除docker的相关配置&amp;目录
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4docker%e7%9a%84%e7%9b%b8%e5%85%b3%e9%85%8d%e7%bd%ae%e7%9b%ae%e5%bd%95">#</a>
+</h3>
+<pre tabindex="0"><code>sudo rm -rf /etc/systemd/system/docker.service.d
+sudo rm -rf /var/lib/docker
+</code></pre><h3 id="确认docker卸载完毕查看版本">
+  确认docker卸载完毕（查看版本）
+  <a class="anchor" href="#%e7%a1%ae%e8%ae%a4docker%e5%8d%b8%e8%bd%bd%e5%ae%8c%e6%af%95%e6%9f%a5%e7%9c%8b%e7%89%88%e6%9c%ac">#</a>
+</h3>
+<pre tabindex="0"><code>sudo docker --version
+</code></pre><p>如果还有，可能存在snap版本的，删除</p>
+<pre tabindex="0"><code>sudo snap remove --purge docker
+</code></pre><h3 id="删除docker相关文件">
+  删除Docker相关文件
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4docker%e7%9b%b8%e5%85%b3%e6%96%87%e4%bb%b6">#</a>
+</h3>
+<pre tabindex="0"><code>whereis docker
+sudo rm -rf /usr/bin/docker
+</code></pre><h2 id="防火墙ufw控制">
+  防火墙UFW控制
+  <a class="anchor" href="#%e9%98%b2%e7%81%ab%e5%a2%99ufw%e6%8e%a7%e5%88%b6">#</a>
+</h2>
+<h3 id="查看防火墙状态">
+  查看防火墙状态
+  <a class="anchor" href="#%e6%9f%a5%e7%9c%8b%e9%98%b2%e7%81%ab%e5%a2%99%e7%8a%b6%e6%80%81">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw status
+</code></pre><h3 id="查看防火墙状态-包括默认规则">
+  查看防火墙状态 包括默认规则
+  <a class="anchor" href="#%e6%9f%a5%e7%9c%8b%e9%98%b2%e7%81%ab%e5%a2%99%e7%8a%b6%e6%80%81-%e5%8c%85%e6%8b%ac%e9%bb%98%e8%ae%a4%e8%a7%84%e5%88%99">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw status verbose
+</code></pre><h3 id="设置默认拒绝入站流量">
+  设置默认拒绝入站流量
+  <a class="anchor" href="#%e8%ae%be%e7%bd%ae%e9%bb%98%e8%ae%a4%e6%8b%92%e7%bb%9d%e5%85%a5%e7%ab%99%e6%b5%81%e9%87%8f">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw default deny incoming
+</code></pre><h3 id="设置默认允许出站流量">
+  设置默认允许出站流量
+  <a class="anchor" href="#%e8%ae%be%e7%bd%ae%e9%bb%98%e8%ae%a4%e5%85%81%e8%ae%b8%e5%87%ba%e7%ab%99%e6%b5%81%e9%87%8f">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw default allow outgoing
+</code></pre><h3 id="防火墙启停">
+  防火墙启停
+  <a class="anchor" href="#%e9%98%b2%e7%81%ab%e5%a2%99%e5%90%af%e5%81%9c">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw enable
+sudo ufw disable
+</code></pre><h3 id="允许禁用端口">
+  允许/禁用端口
+  <a class="anchor" href="#%e5%85%81%e8%ae%b8%e7%a6%81%e7%94%a8%e7%ab%af%e5%8f%a3">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw allow 2222/tcp
+sudo ufw deny 22/tcp
+</code></pre><h3 id="删除规则">
+  删除规则
+  <a class="anchor" href="#%e5%88%a0%e9%99%a4%e8%a7%84%e5%88%99">#</a>
+</h3>
+<pre tabindex="0"><code>sudo ufw delete allow 6379/tcp
+</code></pre><h3 id="防火墙开机自启">
+  防火墙开机自启
+  <a class="anchor" href="#%e9%98%b2%e7%81%ab%e5%a2%99%e5%bc%80%e6%9c%ba%e8%87%aa%e5%90%af">#</a>
+</h3>
+<pre tabindex="0"><code>sudo systemctl status ufw
+</code></pre><h3 id="ifconfig使用安装">
+  ifconfig使用安装
+  <a class="anchor" href="#ifconfig%e4%bd%bf%e7%94%a8%e5%ae%89%e8%a3%85">#</a>
+</h3>
+<pre tabindex="0"><code>sudo apt install net-tools
+</code></pre><h3 id="扩容磁盘分区扩展提升逻辑卷大小和根目录空间">
+  扩容磁盘（分区扩展+提升逻辑卷大小和根目录空间）
+  <a class="anchor" href="#%e6%89%a9%e5%ae%b9%e7%a3%81%e7%9b%98%e5%88%86%e5%8c%ba%e6%89%a9%e5%b1%95%e6%8f%90%e5%8d%87%e9%80%bb%e8%be%91%e5%8d%b7%e5%a4%a7%e5%b0%8f%e5%92%8c%e6%a0%b9%e7%9b%ae%e5%bd%95%e7%a9%ba%e9%97%b4">#</a>
+</h3>
+<pre tabindex="0"><code># 操作之前先停止各个docker容器等程序
+sudo docker-compose stop container_name
+# 持续重启的容器可能无法接收停止命令 使用down强制停止
+sudo docker-compose down container_name
+
+# 进入 fdisk 程序
+sudo fdisk /dev/sda
+
+# 输入 d 表示要删除分区
+Command (m for help): d
+# 输入 3 表示要删除的是 /dev/sda3
+Partition number (1-3, default 3): 3
+# 显示已删除
+Partition 3 has been deleted.
+
+# 输入 n 表示创建新分区
+Command (m for help): n
+# 直接回车表示选择分区号为默认3
+Partition number (3-128, default 3): 
+# 直接回车默认起始扇区
+First sector (4198400-1430257630, default 4198400): 
+# 直接回车默认结束扇区为使用所有剩余空间
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (4198400-1430257630, default 1430255615): 
+
+Created a new partition 3 of type &#39;Linux filesystem&#39; and of size 680 GiB.
+Partition #3 contains a LVM2_member signature.
+
+# yes 表示删除原本的GPT/MBR签名 会导致分区信息丢失
+# no 表示保留旧签名 只是对磁盘进行小调整 比如扩展
+Do you want to remove the signature? [Y]es/[N]o: n
+
+# w 保存修改
+Command (m for help): w
+
+The partition table has been altered.
+Syncing disks.
+
+
+
+# 重新加载分区表
+sudo partprobe
+# 扩展 LVM物理卷
+sudo pvresize /dev/sda3
+# 扩展逻辑卷
+sudo lvextend -l +100%FREE /dev/mapper/ubuntu--vg-ubuntu--lv
+# 调整文件系统大小
+sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
+# 查看当前的文件占用情况
+sudo fdisk -l
+Disk /dev/sda: 682 GiB, 732291923968 bytes, 1430257664 sectors
+Disk model: Virtual disk    
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: gpt
+Disk identifier: 0493D914-0713-4A60-93B8-B83236128F4C
+
+Device       Start        End    Sectors  Size Type
+/dev/sda1     2048       4095       2048    1M BIOS boot
+/dev/sda2     4096    4198399    4194304    2G Linux filesystem
+/dev/sda3  4198400 1430255615 1426057216  680G Linux filesystem
+
+
+Disk /dev/mapper/ubuntu--vg-ubuntu--lv: 680 GiB, 730140246016 bytes, 1426055168 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+
+# 已经给/dev/sda3和/dev/mapper/ubuntu--vg-ubuntu--lv扩展到了680G
+df -h
+Filesystem                         Size  Used Avail Use% Mounted on
+tmpfs                              1.2G  114M  1.1G  10% /run
+/dev/mapper/ubuntu--vg-ubuntu--lv  669G   11G  631G   2% /
+tmpfs                              5.9G     0  5.9G   0% /dev/shm
+tmpfs                              5.0M     0  5.0M   0% /run/lock
+/dev/sda2                          2.0G   95M  1.7G   6% /boot
+tmpfs                              1.2G   12K  1.2G   1% /run/user/1000
+
+# 根目录可用空间已经扩展到了669G
+</code></pre><h2 id="切换用户和修改密码">
+  切换用户和修改密码
+  <a class="anchor" href="#%e5%88%87%e6%8d%a2%e7%94%a8%e6%88%b7%e5%92%8c%e4%bf%ae%e6%94%b9%e5%af%86%e7%a0%81">#</a>
+</h2>
+<pre tabindex="0"><code># 切换用户
+su user
+
+# 修改密码
+passwd user
+
+# 修改root用户密码
+sudo passwd root
+</code></pre><h2 id="固定本机内网ip-禁用dhcp">
+  固定本机内网IP 禁用DHCP
+  <a class="anchor" href="#%e5%9b%ba%e5%ae%9a%e6%9c%ac%e6%9c%ba%e5%86%85%e7%bd%91ip-%e7%a6%81%e7%94%a8dhcp">#</a>
+</h2>
+<pre tabindex="0"><code># 编辑netplan配置文件
+sudo vim /etc/netplan/50-cloud-init.yaml
+
+# 内容如下  注释了原本的配置
+# This file is generated from information provided by the datasource.  Changes
+# to it will not persist across an instance reboot.  To disable cloud-init&#39;s
+# network configuration capabilities, write a file
+# /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg with the following:
+# network: {config: disabled}
+#network:
+#    ethernets:
+#        ens192:
+#            dhcp4: true
+#    version: 2
+network:
+  ethernets:
+  # ens192名称和原始配置保持一致
+    ens192:
+      dhcp4: false
+      addresses: [192.168.1.11/24] # 需要的本机ip
+      routes:
+        - to: default
+          via: 192.168.1.1 # 网关地址
+      nameservers:
+        addresses: [192.168.1.1] # DNS地址
+  version: 2
+
+
+# 使得配置生效
+sudo netplan apply
+</code></pre></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/dba06b7aaa2f0bb735af9ac84c8fa8dd57c97e35" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-04-20</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#非root用户上传文件">非Root用户上传文件</a></li>
+    <li><a href="#时区设置">时区设置</a></li>
+    <li><a href="#host设置">host设置</a></li>
+    <li><a href="#openssh安装">OpenSSH安装</a>
+      <ul>
+        <li><a href="#修改监听端口">修改监听端口</a></li>
+        <li><a href="#重启">重启</a></li>
+      </ul>
+    </li>
+    <li><a href="#docker安装指定版本">Docker安装(指定版本)</a>
+      <ul>
+        <li><a href="#apt依赖安装">apt依赖安装</a></li>
+        <li><a href="#添加阿里云docker-gpg密钥">添加阿里云docker GPG密钥</a></li>
+        <li><a href="#添加阿里云镜像源">添加阿里云镜像源</a></li>
+        <li><a href="#查看有哪些可安装版本">查看有哪些可安装版本</a></li>
+        <li><a href="#安装最新版">安装最新版</a></li>
+        <li><a href="#安装指定版本">安装指定版本</a></li>
+        <li><a href="#安装检查版本查看">安装检查(版本查看)</a></li>
+        <li><a href="#修改镜像源">修改镜像源</a></li>
+        <li><a href="#限制容器日志大小">限制容器日志大小</a></li>
+        <li><a href="#hello-world">Hello World</a></li>
+        <li><a href="#命令启停">命令启停</a></li>
+        <li><a href="#自动唤醒">自动唤醒</a></li>
+        <li><a href="#开启自启">开启自启</a></li>
+      </ul>
+    </li>
+    <li><a href="#curl安装">Curl安装</a></li>
+    <li><a href="#dockercompose安装指定版本">DockerCompose安装（指定版本）</a>
+      <ul>
+        <li><a href="#指定版本安装">指定版本安装</a></li>
+        <li><a href="#添加docker-compose执行权限">添加Docker Compose执行权限</a></li>
+        <li><a href="#安装检查">安装检查</a></li>
+      </ul>
+    </li>
+    <li><a href="#docker卸载">Docker卸载</a>
+      <ul>
+        <li><a href="#完全卸载docker及安装时自动安装的所有包">完全卸载Docker及安装时自动安装的所有包</a></li>
+        <li><a href="#删除没有删除的相关插件">删除没有删除的相关插件</a></li>
+        <li><a href="#删除docker的相关配置目录">删除docker的相关配置&amp;目录</a></li>
+        <li><a href="#确认docker卸载完毕查看版本">确认docker卸载完毕（查看版本）</a></li>
+        <li><a href="#删除docker相关文件">删除Docker相关文件</a></li>
+      </ul>
+    </li>
+    <li><a href="#防火墙ufw控制">防火墙UFW控制</a>
+      <ul>
+        <li><a href="#查看防火墙状态">查看防火墙状态</a></li>
+        <li><a href="#查看防火墙状态-包括默认规则">查看防火墙状态 包括默认规则</a></li>
+        <li><a href="#设置默认拒绝入站流量">设置默认拒绝入站流量</a></li>
+        <li><a href="#设置默认允许出站流量">设置默认允许出站流量</a></li>
+        <li><a href="#防火墙启停">防火墙启停</a></li>
+        <li><a href="#允许禁用端口">允许/禁用端口</a></li>
+        <li><a href="#删除规则">删除规则</a></li>
+        <li><a href="#防火墙开机自启">防火墙开机自启</a></li>
+        <li><a href="#ifconfig使用安装">ifconfig使用安装</a></li>
+        <li><a href="#扩容磁盘分区扩展提升逻辑卷大小和根目录空间">扩容磁盘（分区扩展+提升逻辑卷大小和根目录空间）</a></li>
+      </ul>
+    </li>
+    <li><a href="#切换用户和修改密码">切换用户和修改密码</a></li>
+    <li><a href="#固定本机内网ip-禁用dhcp">固定本机内网IP 禁用DHCP</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
