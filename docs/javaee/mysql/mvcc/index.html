@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  MVCC 多版本并发控制
+  #
+
+
+  版本链
+  #
+
+数据库中，以最新记录和undolog中的历史记录形成了版本链
+版本链中每个版本，除了具体行数据之外，还有该版本的事务ID、和回滚指针，每一行记录都有这两个隐藏列
+每个版本的回滚指针指向上一个版本
+
+  ReadView 快照数据
+  #
+
+作用：让数据库知道在具体查询的时候，应该去查询哪个版本的数据
+数据结构：代码里的一个对象
+
+M_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交）
+Min_trax_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最老的一个未提交）
+Max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（未生成即将生成）
+Creator_trx_id: 生成该ReadView的事务的id（创建者）
+
+ReadView如何判断版本链中哪个版本可用？
+
+Trx_id == creator_trx_id 可以访问这个版本（创建者可以访问）
+Trx_id &lt; min_trx_id 可以访问这个版本（可以访问已提交的数据）
+Trx_id &gt; max_trx_id 不可以访问这个版本（当前事务不能访问超过当前版本链的数据）
+Min_trx_id &lt;= trx_id &lt;= max_trx_id 如果trx_id在m_ids中，就可以不访问这个版本，因为里面的数据都没有commit
+
+
+  ReadView如何实现读已提交和可重复读？
+  #
+
+版本链是全局的，没有事务时版本链的头部是最新数据，后面是每个版本的历史数据
+如果有多个事务同时更新某一行数据，每个事务的更新，都会在版本链上生成一个版本
+
+执行一个select前
+先生成一个当前事务的ReadView，ReadView包含上述数据
+让ReadView在版本链从头到尾比较：(版本数据对查询的可见性)
+
+
+如果该版本是当前事务提交的，那自然可以访问该数据，且该版本未提交也可以访问
+如果该版本不是当前事务提交，但是是已提交的数据，当然可以访问
+如果该版本数据是当前事务之后生成的事务生成的版本，那么肯定没有提交，不能访问
+如果该版本数据是当前事务生成ReadView时的未提交事务之一，那么不能访问这些未提交的数据
+
+
+  事务隔离级别与MVCC
+  #
+
+
+
+如果是读已提交：
+则每次select都会生成ReadView，使得除了creator_trx_id以外的数据有所变化
+于是每次select都可以访问到最新的提交数据，或者是自己的修改数据
+访问到的最新提交数据可能变化
+
+
+如果是可重复读：
+仅在第一次select生成ReadView
+从而每次要么访问到自己的最新修改，要么一直是生成当时的最新提交数据，不会变化
+
+
+如果是读未提交：
+则每次直接访问最新的版本链数据，不关心是否提交，不需要MVCC
+
+
+如果是串行化：
+则通过加锁互斥访问，不需要MVCC">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/mvcc/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="MVCC 多版本并发控制">
+  <meta property="og:description" content="MVCC 多版本并发控制#版本链#数据库中，以最新记录和undolog中的历史记录形成了版本链
+版本链中每个版本，除了具体行数据之外，还有该版本的事务ID、和回滚指针，每一行记录都有这两个隐藏列
+每个版本的回滚指针指向上一个版本
+ReadView 快照数据#作用：让数据库知道在具体查询的时候，应该去查询哪个版本的数据
+数据结构：代码里的一个对象
+M_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交） Min_trax_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最老的一个未提交） Max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（未生成即将生成） Creator_trx_id: 生成该ReadView的事务的id（创建者） ReadView如何判断版本链中哪个版本可用？
+Trx_id == creator_trx_id 可以访问这个版本（创建者可以访问） Trx_id &lt; min_trx_id 可以访问这个版本（可以访问已提交的数据） Trx_id &gt; max_trx_id 不可以访问这个版本（当前事务不能访问超过当前版本链的数据） Min_trx_id &lt;= trx_id &lt;= max_trx_id 如果trx_id在m_ids中，就可以不访问这个版本，因为里面的数据都没有commit ReadView如何实现读已提交和可重复读？#版本链是全局的，没有事务时版本链的头部是最新数据，后面是每个版本的历史数据 如果有多个事务同时更新某一行数据，每个事务的更新，都会在版本链上生成一个版本
+执行一个select前 先生成一个当前事务的ReadView，ReadView包含上述数据 让ReadView在版本链从头到尾比较：(版本数据对查询的可见性) 如果该版本是当前事务提交的，那自然可以访问该数据，且该版本未提交也可以访问 如果该版本不是当前事务提交，但是是已提交的数据，当然可以访问 如果该版本数据是当前事务之后生成的事务生成的版本，那么肯定没有提交，不能访问 如果该版本数据是当前事务生成ReadView时的未提交事务之一，那么不能访问这些未提交的数据 事务隔离级别与MVCC#如果是读已提交： 则每次select都会生成ReadView，使得除了creator_trx_id以外的数据有所变化
+于是每次select都可以访问到最新的提交数据，或者是自己的修改数据
+访问到的最新提交数据可能变化
+如果是可重复读： 仅在第一次select生成ReadView
+从而每次要么访问到自己的最新修改，要么一直是生成当时的最新提交数据，不会变化
+如果是读未提交： 则每次直接访问最新的版本链数据，不关心是否提交，不需要MVCC
+如果是串行化： 则通过加锁互斥访问，不需要MVCC">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+<title>MVCC 多版本并发控制 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/mvcc/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.2e36efccd5125058c886cd7e90119bec6c60dc7a11aa267c4e8ad7bb0584a8f6.js" integrity="sha256-LjbvzNUSUFjIhs1&#43;kBGb7Gxg3HoRqiZ8TorXuwWEqPY=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/mvcc/" class="active">MVCC 多版本并发控制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>MVCC 多版本并发控制</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#版本链">版本链</a></li>
+    <li><a href="#readview-快照数据">ReadView 快照数据</a></li>
+    <li><a href="#readview如何实现读已提交和可重复读">ReadView如何实现读已提交和可重复读？</a></li>
+    <li><a href="#事务隔离级别与mvcc">事务隔离级别与MVCC</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="mvcc-多版本并发控制">
+  MVCC 多版本并发控制
+  <a class="anchor" href="#mvcc-%e5%a4%9a%e7%89%88%e6%9c%ac%e5%b9%b6%e5%8f%91%e6%8e%a7%e5%88%b6">#</a>
+</h1>
+<h2 id="版本链">
+  版本链
+  <a class="anchor" href="#%e7%89%88%e6%9c%ac%e9%93%be">#</a>
+</h2>
+<p>数据库中，以最新记录和undolog中的历史记录形成了版本链</p>
+<p>版本链中每个版本，除了具体行数据之外，还有该版本的事务ID、和回滚指针，每一行记录都有这两个隐藏列</p>
+<p>每个版本的回滚指针指向上一个版本</p>
+<h2 id="readview-快照数据">
+  ReadView 快照数据
+  <a class="anchor" href="#readview-%e5%bf%ab%e7%85%a7%e6%95%b0%e6%8d%ae">#</a>
+</h2>
+<p>作用：让数据库知道在具体查询的时候，应该去查询哪个版本的数据</p>
+<p>数据结构：代码里的一个对象</p>
+<ul>
+<li>M_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交）</li>
+<li>Min_trax_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最老的一个未提交）</li>
+<li>Max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（未生成即将生成）</li>
+<li>Creator_trx_id: 生成该ReadView的事务的id（创建者）</li>
+</ul>
+<p>ReadView如何判断版本链中哪个版本可用？</p>
+<ul>
+<li>Trx_id == creator_trx_id 可以访问这个版本（创建者可以访问）</li>
+<li>Trx_id &lt; min_trx_id 可以访问这个版本（可以访问已提交的数据）</li>
+<li>Trx_id &gt; max_trx_id 不可以访问这个版本（当前事务不能访问超过当前版本链的数据）</li>
+<li>Min_trx_id &lt;= trx_id &lt;= max_trx_id 如果trx_id在m_ids中，就可以不访问这个版本，因为里面的数据都没有commit</li>
+</ul>
+<h2 id="readview如何实现读已提交和可重复读">
+  ReadView如何实现读已提交和可重复读？
+  <a class="anchor" href="#readview%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e8%af%bb%e5%b7%b2%e6%8f%90%e4%ba%a4%e5%92%8c%e5%8f%af%e9%87%8d%e5%a4%8d%e8%af%bb">#</a>
+</h2>
+<p>版本链是全局的，没有事务时版本链的头部是最新数据，后面是每个版本的历史数据
+如果有多个事务同时更新某一行数据，每个事务的更新，都会在版本链上生成一个版本</p>
+<ol>
+<li>执行一个select前
+先生成一个当前事务的ReadView，ReadView包含上述数据</li>
+<li>让ReadView在版本链从头到尾比较：(版本数据对查询的可见性)</li>
+</ol>
+<ul>
+<li>如果该版本是当前事务提交的，那自然可以访问该数据，且该版本未提交也可以访问</li>
+<li>如果该版本不是当前事务提交，但是是已提交的数据，当然可以访问</li>
+<li>如果该版本数据是当前事务之后生成的事务生成的版本，那么肯定没有提交，不能访问</li>
+<li>如果该版本数据是当前事务生成ReadView时的未提交事务之一，那么不能访问这些未提交的数据</li>
+</ul>
+<h2 id="事务隔离级别与mvcc">
+  事务隔离级别与MVCC
+  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1%e9%9a%94%e7%a6%bb%e7%ba%a7%e5%88%ab%e4%b8%8emvcc">#</a>
+</h2>
+<ul>
+<li>
+<p>如果是读已提交：
+则每次select都会生成ReadView，使得除了creator_trx_id以外的数据有所变化</p>
+<p>于是每次select都可以访问到最新的提交数据，或者是自己的修改数据</p>
+<p>访问到的最新提交数据可能变化</p>
+</li>
+<li>
+<p>如果是可重复读：
+仅在第一次select生成ReadView</p>
+<p>从而每次要么访问到自己的最新修改，要么一直是生成当时的最新提交数据，不会变化</p>
+</li>
+<li>
+<p>如果是读未提交：
+则每次直接访问最新的版本链数据，不关心是否提交，不需要MVCC</p>
+</li>
+<li>
+<p>如果是串行化：
+则通过加锁互斥访问，不需要MVCC</p>
+</li>
+</ul>
+<blockquote>
+<p>幻读问题的解决：</p>
+<p>可明确的是：仅在快照读的情况下可以解决幻读，当前读不能解决幻读</p>
+<p>幻读指的是两次查询前后，因为中间有事务提交，导致查询得到的数据量不符合</p></blockquote>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#版本链">版本链</a></li>
+    <li><a href="#readview-快照数据">ReadView 快照数据</a></li>
+    <li><a href="#readview如何实现读已提交和可重复读">ReadView如何实现读已提交和可重复读？</a></li>
+    <li><a href="#事务隔离级别与mvcc">事务隔离级别与MVCC</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

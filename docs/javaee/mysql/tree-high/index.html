@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  索引树高度计算
+  #
+
+
+  基本原理
+  #
+
+Innodb是索引组织表，每个页都包含一个PAGE_LEVEL，表示当前页在索引上的高度
+默认叶子节点高度为0，ROOT节点PAGE_LEVEL&#43;1就是这棵索引高度
+PAGE_LEVEL在每个页的64位偏移位置，占用2字节
+找到ROOT页位置，知道单页大小，使用hexdump在指定表空间找到第PAGE_NO页的64位偏移量的后两个字节即可
+
+  找到ROOT页信息
+  #
+
+SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO
+FROM information_schema.INNODB_SYS_INDEXES a,
+information_schema.INNODB_SYS_TABLES b
+WHERE a.table_id = b.table_id AND a.space &lt;&gt; 0;
+结果：
+
+其中（space、PAGE_NO）指向ROOT页
+space是表空间，可以是系统表空间（如ibdata1文件）或独立表空间（如每个InnoDB表的.ibd文件）。表空间由多个区（extent）组成，每个区包含连续的页（page）
+也就是ROOT页是space的page_no页
+
+  查看innodb_page_size
+  #
+
+show variables like &#39;innodb_page_size&#39;
+结果：
+
+也就是Innodb默认的页大小16KB
+
+  找到ROOT的PAGE_LEVEL，得到索引高度
+  #
+
+首先要找到表对应的ibd文件，也就是表空间文件
+所在位置是MySQL的数据目录下的数据库名文件夹下
+#查找MySQL数据目录
+show variables like &#39;datadir&#39;
+
+我的MySQL是用Docker起的，docker中没有安装hexdump命令，不过这个目录被挂载出来了，考虑在宿主机上分析其中的ibd文件
+但所在文件夹和文件权限限制了宿主机外用户访问文件夹和文件
+
+修改权限需要到docker容器中修改该文件和对应文件夹权限
+chmod 755 path
+原本权限为750，禁止其他用户读写文件夹
+修改后在宿主机进入文件夹中，找到所需文件，在文件夹执行命令
+hexdump -C -s 49216 -n 10 goods_info_100M.ibd
+
+前两个字节是PAGE_LEVEL，所以这个索引树高度为3&#43;1 = 4">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/tree-high/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="索引树高度计算">
+  <meta property="og:description" content="索引树高度计算#基本原理#Innodb是索引组织表，每个页都包含一个PAGE_LEVEL，表示当前页在索引上的高度
+默认叶子节点高度为0，ROOT节点PAGE_LEVEL&#43;1就是这棵索引高度
+PAGE_LEVEL在每个页的64位偏移位置，占用2字节
+找到ROOT页位置，知道单页大小，使用hexdump在指定表空间找到第PAGE_NO页的64位偏移量的后两个字节即可
+找到ROOT页信息#SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO FROM information_schema.INNODB_SYS_INDEXES a, information_schema.INNODB_SYS_TABLES b WHERE a.table_id = b.table_id AND a.space &lt;&gt; 0;
+结果： 其中（space、PAGE_NO）指向ROOT页
+space是表空间，可以是系统表空间（如ibdata1文件）或独立表空间（如每个InnoDB表的.ibd文件）。表空间由多个区（extent）组成，每个区包含连续的页（page）
+也就是ROOT页是space的page_no页
+查看innodb_page_size#show variables like &#39;innodb_page_size&#39; 结果： 也就是Innodb默认的页大小16KB
+找到ROOT的PAGE_LEVEL，得到索引高度#首先要找到表对应的ibd文件，也就是表空间文件
+所在位置是MySQL的数据目录下的数据库名文件夹下
+#查找MySQL数据目录show variables like &#39;datadir&#39; 我的MySQL是用Docker起的，docker中没有安装hexdump命令，不过这个目录被挂载出来了，考虑在宿主机上分析其中的ibd文件
+但所在文件夹和文件权限限制了宿主机外用户访问文件夹和文件 修改权限需要到docker容器中修改该文件和对应文件夹权限
+chmod 755 path 原本权限为750，禁止其他用户读写文件夹
+修改后在宿主机进入文件夹中，找到所需文件，在文件夹执行命令
+hexdump -C -s 49216 -n 10 goods_info_100M.ibd 前两个字节是PAGE_LEVEL，所以这个索引树高度为3&#43;1 = 4">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+<title>索引树高度计算 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/tree-high/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.2e36efccd5125058c886cd7e90119bec6c60dc7a11aa267c4e8ad7bb0584a8f6.js" integrity="sha256-LjbvzNUSUFjIhs1&#43;kBGb7Gxg3HoRqiZ8TorXuwWEqPY=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/mvcc/" class="">MVCC 多版本并发控制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="active">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>索引树高度计算</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#基本原理">基本原理</a></li>
+    <li><a href="#找到root页信息">找到ROOT页信息</a></li>
+    <li><a href="#查看innodb_page_size">查看innodb_page_size</a></li>
+    <li><a href="#找到root的page_level得到索引高度">找到ROOT的PAGE_LEVEL，得到索引高度</a></li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="索引树高度计算">
+  索引树高度计算
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e6%a0%91%e9%ab%98%e5%ba%a6%e8%ae%a1%e7%ae%97">#</a>
+</h1>
+<h2 id="基本原理">
+  基本原理
+  <a class="anchor" href="#%e5%9f%ba%e6%9c%ac%e5%8e%9f%e7%90%86">#</a>
+</h2>
+<p>Innodb是索引组织表，每个页都包含一个PAGE_LEVEL，表示当前页在索引上的高度</p>
+<p>默认叶子节点高度为0，ROOT节点PAGE_LEVEL+1就是这棵索引高度</p>
+<p>PAGE_LEVEL在每个页的64位偏移位置，占用2字节</p>
+<p>找到ROOT页位置，知道单页大小，使用hexdump在指定表空间找到第PAGE_NO页的64位偏移量的后两个字节即可</p>
+<h2 id="找到root页信息">
+  找到ROOT页信息
+  <a class="anchor" href="#%e6%89%be%e5%88%b0root%e9%a1%b5%e4%bf%a1%e6%81%af">#</a>
+</h2>
+<p>SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO
+FROM information_schema.INNODB_SYS_INDEXES a,
+information_schema.INNODB_SYS_TABLES b
+WHERE a.table_id = b.table_id AND a.space &lt;&gt; 0;</p>
+<p>结果：
+<img src="./images/root-info.png" alt="&ldquo;root页信息&rdquo;" title="root页信息"/>
+其中（space、PAGE_NO）指向ROOT页</p>
+<p>space是表空间，可以是系统表空间（如ibdata1文件）或独立表空间（如每个InnoDB表的.ibd文件）。表空间由多个区（extent）组成，每个区包含连续的页（page）</p>
+<p>也就是ROOT页是space的page_no页</p>
+<h2 id="查看innodb_page_size">
+  查看innodb_page_size
+  <a class="anchor" href="#%e6%9f%a5%e7%9c%8binnodb_page_size">#</a>
+</h2>
+<pre tabindex="0"><code>show variables like &#39;innodb_page_size&#39;
+</code></pre><p>结果：
+<img src="./images/innodb_page_size.png" alt="&ldquo;innodb_page_size&rdquo;" title="innodb_page_size"/></p>
+<p>也就是Innodb默认的页大小16KB</p>
+<h2 id="找到root的page_level得到索引高度">
+  找到ROOT的PAGE_LEVEL，得到索引高度
+  <a class="anchor" href="#%e6%89%be%e5%88%b0root%e7%9a%84page_level%e5%be%97%e5%88%b0%e7%b4%a2%e5%bc%95%e9%ab%98%e5%ba%a6">#</a>
+</h2>
+<p>首先要找到表对应的ibd文件，也就是表空间文件</p>
+<p>所在位置是MySQL的数据目录下的数据库名文件夹下</p>
+<pre tabindex="0"><code>#查找MySQL数据目录
+show variables like &#39;datadir&#39;
+</code></pre><p><img src="./images/dir.png" alt="&ldquo;dir&rdquo;" title="dir"/></p>
+<p>我的MySQL是用Docker起的，docker中没有安装hexdump命令，不过这个目录被挂载出来了，考虑在宿主机上分析其中的ibd文件</p>
+<p>但所在文件夹和文件权限限制了宿主机外用户访问文件夹和文件
+<img src="./images/docker-dir.png" alt="&ldquo;docker-dir&rdquo;" title="docker-dir"/>
+修改权限需要到docker容器中修改该文件和对应文件夹权限</p>
+<pre tabindex="0"><code>chmod 755 path
+</code></pre><p>原本权限为750，禁止其他用户读写文件夹</p>
+<p>修改后在宿主机进入文件夹中，找到所需文件，在文件夹执行命令</p>
+<pre tabindex="0"><code>hexdump -C -s 49216 -n 10 goods_info_100M.ibd
+</code></pre><p><img src="./images/page-info.png" alt="&ldquo;page-info&rdquo;" title="page-info"/></p>
+<p>前两个字节是PAGE_LEVEL，所以这个索引树高度为3+1 = 4</p>
+<p>后面8个字节是index_id，32十六进制转10进制就是50，49216 = 16384*3 + 64，是ROOT页在PAGE_NO=3的索引树</p>
+<p><img src="./images/table-info.png" alt="&ldquo;table-info&rdquo;" title="table-info"/></p>
+<h2 id="总结">
+  总结
+  <a class="anchor" href="#%e6%80%bb%e7%bb%93">#</a>
+</h2>
+<p>关键命令：</p>
+<pre tabindex="0"><code>hexdump -C -s [innodb_page_size*PAGE_NO + 64] -n 10 [ibd filename]
+</code></pre></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#基本原理">基本原理</a></li>
+    <li><a href="#找到root页信息">找到ROOT页信息</a></li>
+    <li><a href="#查看innodb_page_size">查看innodb_page_size</a></li>
+    <li><a href="#找到root的page_level得到索引高度">找到ROOT的PAGE_LEVEL，得到索引高度</a></li>
+    <li><a href="#总结">总结</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

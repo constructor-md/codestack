@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  Explain参数解释和查询成本分析
+  #
+
+
+  Explain
+  #
+
+通过执行 explain [sql] 得到执行计划
+如果from中包含自查虚拟，会查并生成临时表
+explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行
+
+  结果列分析
+  #
+
+
+  id
+  #
+
+有几个select就有几个id，id按select出现的顺序增长，id大的先执行，null最后执行，相同则从上往下执行
+
+  select_type
+  #
+
+
+simple 简单查询，没有子查询和union
+primary 复杂查询中最外层迭代select
+subquery 包含在select中的子查询，不在from中
+dependent subquery select语句出现的子查询，依赖外部查询
+derived 包含在from子句的子查询，会把结果放在临时表（派生表）
+
+
+  table
+  #
+
+这一行的查询在访问哪个表
+
+from子句有子查询时，table列是格式，表示当前查询依赖id=N的查询，会先执行id=N的查询
+有union时，union result的table列的值为union 1,2，1和2表示参与union的select的id
+
+
+  type
+  #
+
+表示关联类型或访问类型，表示mysql决定如何查找表中的行，查找数据行记录的大概范围, 从最优到最差依次为：
+
+system &gt; const &gt; eq_ref &gt; ref &gt; range &gt; index &gt; ALL
+一般来说应该最少把查询保持在range级别，最好达到ref
+
+system MyIsm出现，表为空或者记录唯一时
+const 主键索引或唯一索引的等值查询
+eq_ref join的时候有驱动表和被驱动表，被驱动表走唯一或者主键索引时
+ref 非主键或非唯一索引的等值查询，关联查询时被驱动表的驱动键走非唯一索引
+range 一般索引的范围查询
+index 全表扫描，非聚簇索引的叶子节点
+All 聚簇索引的全表扫描
+
+
+  possible keys列
+  #
+
+显示查询可能使用哪些索引来查找">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/explain/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="Explain参数解释和查询成本分析">
+  <meta property="og:description" content="Explain参数解释和查询成本分析#Explain#通过执行 explain [sql] 得到执行计划
+如果from中包含自查虚拟，会查并生成临时表
+explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行
+结果列分析#id#有几个select就有几个id，id按select出现的顺序增长，id大的先执行，null最后执行，相同则从上往下执行
+select_type#simple 简单查询，没有子查询和union primary 复杂查询中最外层迭代select subquery 包含在select中的子查询，不在from中 dependent subquery select语句出现的子查询，依赖外部查询 derived 包含在from子句的子查询，会把结果放在临时表（派生表） table#这一行的查询在访问哪个表
+from子句有子查询时，table列是格式，表示当前查询依赖id=N的查询，会先执行id=N的查询 有union时，union result的table列的值为union 1,2，1和2表示参与union的select的id type#表示关联类型或访问类型，表示mysql决定如何查找表中的行，查找数据行记录的大概范围, 从最优到最差依次为：
+system &gt; const &gt; eq_ref &gt; ref &gt; range &gt; index &gt; ALL 一般来说应该最少把查询保持在range级别，最好达到ref
+system MyIsm出现，表为空或者记录唯一时 const 主键索引或唯一索引的等值查询 eq_ref join的时候有驱动表和被驱动表，被驱动表走唯一或者主键索引时 ref 非主键或非唯一索引的等值查询，关联查询时被驱动表的驱动键走非唯一索引 range 一般索引的范围查询 index 全表扫描，非聚簇索引的叶子节点 All 聚簇索引的全表扫描 possible keys列#显示查询可能使用哪些索引来查找">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+<title>Explain参数解释和查询成本分析 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/explain/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.2e36efccd5125058c886cd7e90119bec6c60dc7a11aa267c4e8ad7bb0584a8f6.js" integrity="sha256-LjbvzNUSUFjIhs1&#43;kBGb7Gxg3HoRqiZ8TorXuwWEqPY=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/mvcc/" class="">MVCC 多版本并发控制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="active">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Explain参数解释和查询成本分析</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#explain">Explain</a>
+      <ul>
+        <li><a href="#结果列分析">结果列分析</a></li>
+      </ul>
+    </li>
+    <li><a href="#全表扫描成本分析">全表扫描成本分析</a>
+      <ul>
+        <li><a href="#表统计信息表">表统计信息表</a></li>
+        <li><a href="#io成本">IO成本</a></li>
+        <li><a href="#cpu成本">CPU成本</a></li>
+        <li><a href="#索引优化">索引优化</a></li>
+        <li><a href="#join优化">Join优化</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="explain参数解释和查询成本分析">
+  Explain参数解释和查询成本分析
+  <a class="anchor" href="#explain%e5%8f%82%e6%95%b0%e8%a7%a3%e9%87%8a%e5%92%8c%e6%9f%a5%e8%af%a2%e6%88%90%e6%9c%ac%e5%88%86%e6%9e%90">#</a>
+</h1>
+<h2 id="explain">
+  Explain
+  <a class="anchor" href="#explain">#</a>
+</h2>
+<p>通过执行 explain [sql] 得到执行计划</p>
+<p>如果from中包含自查虚拟，会查并生成临时表</p>
+<p>explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行</p>
+<h3 id="结果列分析">
+  结果列分析
+  <a class="anchor" href="#%e7%bb%93%e6%9e%9c%e5%88%97%e5%88%86%e6%9e%90">#</a>
+</h3>
+<h4 id="id">
+  id
+  <a class="anchor" href="#id">#</a>
+</h4>
+<p>有几个select就有几个id，id按select出现的顺序增长，id大的先执行，null最后执行，相同则从上往下执行</p>
+<h4 id="select_type">
+  select_type
+  <a class="anchor" href="#select_type">#</a>
+</h4>
+<ul>
+<li>simple 简单查询，没有子查询和union</li>
+<li>primary 复杂查询中最外层迭代select</li>
+<li>subquery 包含在select中的子查询，不在from中</li>
+<li>dependent subquery select语句出现的子查询，依赖外部查询</li>
+<li>derived 包含在from子句的子查询，会把结果放在临时表（派生表）</li>
+</ul>
+<h4 id="table">
+  table
+  <a class="anchor" href="#table">#</a>
+</h4>
+<p>这一行的查询在访问哪个表</p>
+<ul>
+<li>from子句有子查询时，table列是<!-- raw HTML omitted -->格式，表示当前查询依赖id=N的查询，会先执行id=N的查询</li>
+<li>有union时，union result的table列的值为union 1,2，1和2表示参与union的select的id</li>
+</ul>
+<h4 id="type">
+  type
+  <a class="anchor" href="#type">#</a>
+</h4>
+<p>表示关联类型或访问类型，表示mysql决定如何查找表中的行，查找数据行记录的大概范围, 从最优到最差依次为：</p>
+<blockquote>
+<p>system &gt; const &gt; eq_ref &gt; ref &gt; range &gt; index &gt; ALL
+一般来说应该最少把查询保持在range级别，最好达到ref</p></blockquote>
+<ul>
+<li>system MyIsm出现，表为空或者记录唯一时</li>
+<li>const 主键索引或唯一索引的等值查询</li>
+<li>eq_ref join的时候有驱动表和被驱动表，被驱动表走唯一或者主键索引时</li>
+<li>ref 非主键或非唯一索引的等值查询，关联查询时被驱动表的驱动键走非唯一索引</li>
+<li>range 一般索引的范围查询</li>
+<li>index 全表扫描，非聚簇索引的叶子节点</li>
+<li>All 聚簇索引的全表扫描</li>
+</ul>
+<h4 id="possible-keys列">
+  possible keys列
+  <a class="anchor" href="#possible-keys%e5%88%97">#</a>
+</h4>
+<p>显示查询可能使用哪些索引来查找</p>
+<ul>
+<li>posible_keys有列而key为null，是因为根据成本分析，走索引比全表扫描成本高，选择了全表扫描</li>
+<li>如果possible_keys为null，则没有索引。应检查where子句看是否可以创造索引提升查询性能</li>
+</ul>
+<h4 id="key列">
+  key列
+  <a class="anchor" href="#key%e5%88%97">#</a>
+</h4>
+<p>显示MySQL实际采用哪个索引优化对该表的访问</p>
+<ul>
+<li>如果没有用索引，该列为null</li>
+<li>如果想强制MySQL使用或者忽视possible_keys列中的索引，可以在查询时使用force index或ignore index
+有时候数据量变化是会出现索引失效，可以考虑加上force index</li>
+</ul>
+<h4 id="key_len">
+  key_len
+  <a class="anchor" href="#key_len">#</a>
+</h4>
+<p>表示索引使用的字节数，可以判断索引的使用情况</p>
+<p>特别是组合索引情况下，判断索引有多少部分被使用到</p>
+<p>如abc组合索引，查询条件为ac，正常会使用a索引部分，有时会索引下推，用到ac索引</p>
+<h4 id="ref列">
+  ref列
+  <a class="anchor" href="#ref%e5%88%97">#</a>
+</h4>
+<p>显示在key列记录的索引中，表查找值所用到的列或常量</p>
+<p>如 const、table.col1</p>
+<h4 id="rows列">
+  rows列
+  <a class="anchor" href="#rows%e5%88%97">#</a>
+</h4>
+<p>是MySQL根据索引统计信息估计要读取并检测的行数，不是结果集的行数</p>
+<h4 id="filtered列">
+  filtered列
+  <a class="anchor" href="#filtered%e5%88%97">#</a>
+</h4>
+<p>是已筛选列，表示按表条件筛选的表行的估计百分比，最大值是100%，意味着没有筛选</p>
+<p>越小表示过滤量的增加</p>
+<blockquote>
+<p>rows显示检查的估计行数</p>
+<p>rows * filtered 显示与下表连接的行数，如果rows=1000，filtered=50.00，那么与下表联表的行数为1000*50%=500</p></blockquote>
+<h4 id="extra列">
+  extra列
+  <a class="anchor" href="#extra%e5%88%97">#</a>
+</h4>
+<ul>
+<li>using index 使用覆盖索引</li>
+<li>using where 使用where语句处理结果，且查询列未被索引覆盖</li>
+<li>using indxe condition 查询列不完全被索引覆盖，where条件中是一个前导列的范围</li>
+<li>using temporary mysql需要创建临时表处理查询，必须优化，临时表开销大，首先想到用索引优化</li>
+<li>using filesort 使用外部排序而不是索引排序，数据较小的时候从内存排序，否则需要在磁盘完成排序。这种情况下应考虑使用索引优化</li>
+</ul>
+<h2 id="全表扫描成本分析">
+  全表扫描成本分析
+  <a class="anchor" href="#%e5%85%a8%e8%a1%a8%e6%89%ab%e6%8f%8f%e6%88%90%e6%9c%ac%e5%88%86%e6%9e%90">#</a>
+</h2>
+<p>MySQL的成本：</p>
+<ol>
+<li>MySQL执行一个查询可以有不同执行方案，MySQL会选择成本最低的方案执行查询</li>
+<li>MySQL中一条查询语句的执行成本：IO成本+CPU成本</li>
+<li>IO成本：一般MyISAM和InnoDB都是将数据和索引存储在磁盘，查询时需要将数据和索引加载到内存，这个加载过程损耗的时间为IO成本</li>
+<li>CPU成本：读取和检测记录是否满足对应的搜索条件、对结果集进行排序的操作损耗的时间为CPU成本</li>
+</ol>
+<p>对Innodb来说，全表扫描的含义是把聚簇索引中的记录都依次和给定的所有条件进行一下比较，把符合搜索条件的记录加入到结果集，所以需要将聚簇索引所在的页面加载到内存，再检测记录是否符合搜索条件</p>
+<p>查询成本 = 把二叉树叶子节点load进内存的IO成本 + 和叶子节点中每条数据compare的CPU成本</p>
+<p>要load多少次数据到内存？
+叶子节点有多少条数据？</p>
+<h3 id="表统计信息表">
+  表统计信息表
+  <a class="anchor" href="#%e8%a1%a8%e7%bb%9f%e8%ae%a1%e4%bf%a1%e6%81%af%e8%a1%a8">#</a>
+</h3>
+<p>MySQL为每个表维护了一系列的统计信息，可以通过以下语句查询指定表统计信息</p>
+<pre tabindex="0"><code>show table status like &#39;table_name&#39;
+</code></pre><p>内部的值和实际有一点偏差，类似估算值,从中可以查到Data_length字段，是数据表总大小</p>
+<p>rows是表记录数，对Innodb来说是一个估计值</p>
+<h3 id="io成本">
+  IO成本
+  <a class="anchor" href="#io%e6%88%90%e6%9c%ac">#</a>
+</h3>
+<p>Data_length = 聚簇索引的页面数量 * 每个页面的大小（16kb）</p>
+<p>聚簇索引的页面数量=Data_length ÷ 16 ÷ 1027</p>
+<p>IO成本 = 聚簇索引的页面数量 * 1.0 + 1.1</p>
+<p>页面数 * 加载一个页面的IO成本常数 + 微调值</p>
+<blockquote>
+<p>微调值是硬编码在代码中，没有注释且值十分小，不影响大方向分析</p></blockquote>
+<h3 id="cpu成本">
+  CPU成本
+  <a class="anchor" href="#cpu%e6%88%90%e6%9c%ac">#</a>
+</h3>
+<p>= 统计数据表中的rows * 0.2 + 1.0</p>
+<p>是统计记录数 * 访问一条记录需要的CPU成本常数 + 微调值</p>
+<blockquote>
+<p>总成本 = IO成本 + CPU成本</p>
+<p>上面分析的是聚簇索引，直接扫数据，没有回表</p>
+<p>可以自行分析二级索引</p></blockquote>
+<h3 id="索引优化">
+  索引优化
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e4%bc%98%e5%8c%96">#</a>
+</h3>
+<ul>
+<li>
+<p>联合索引第一个字段用范围查询不走索引
+第一个字段就用范围查询，回表效率不高，不如全表扫描</p>
+</li>
+<li>
+<p>联合索引第一个字段Like，走索引
+可以在索引遍历过程中，对索引包含的所有字段先做判断，过滤不符合条件的记录再回表，减少回表次数</p>
+</li>
+<li>
+<p>覆盖索引优化
+如果有查询经常要取某几个字段和筛某几个字段，可以搞成联合索引，这样可以直接从索引树上获取数据，不用回表</p>
+</li>
+</ul>
+<h3 id="join优化">
+  Join优化
+  <a class="anchor" href="#join%e4%bc%98%e5%8c%96">#</a>
+</h3>
+<ul>
+<li>
+<p>嵌套循环连接Nested-Loop Join(NLJ)算法
+一次一行循环地从驱动表读取数据，取关联字段在被驱动表找到满足条件的行，再取两表结果合集</p>
+</li>
+<li>
+<p>基于块地嵌套循环连接Block Nested-Loop Join(BNL)算法
+把驱动表的数据读取到join_buffer中，然后扫描被驱动表，把被驱动表数据拉出和驱动表数据对比</p>
+</li>
+</ul>
+<p>应该尽量嵌套循环进行连接，使用NLJ算法</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#explain">Explain</a>
+      <ul>
+        <li><a href="#结果列分析">结果列分析</a></li>
+      </ul>
+    </li>
+    <li><a href="#全表扫描成本分析">全表扫描成本分析</a>
+      <ul>
+        <li><a href="#表统计信息表">表统计信息表</a></li>
+        <li><a href="#io成本">IO成本</a></li>
+        <li><a href="#cpu成本">CPU成本</a></li>
+        <li><a href="#索引优化">索引优化</a></li>
+        <li><a href="#join优化">Join优化</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
