@@ -1,7 +1,7 @@
 ---
 title: InnoDB 锁机制
 draft: false
-weight: 6
+weight: 3
 ---
 
 # InnoDB 锁机制

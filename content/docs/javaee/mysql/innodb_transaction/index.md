@@ -1,7 +1,7 @@
 ---
 title: InnoDB 事务
 draft: false
-weight: 8
+weight: 2
 ---
 
 
