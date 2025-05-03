@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
-<head>
+<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="
@@ -105,7 +105,7 @@ SELECT * FROM t WHERE id = &#39;100ABC&#39;; -- 转换失败，全表扫描
 原因：索引树结构逻辑为大小排列，函数计算后无法找到对应的节点">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_index/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/innodb_index/">
   <meta property="og:site_name" content="CodeStack">
   <meta property="og:title" content="InnoDB 索引">
   <meta property="og:description" content="InnoDB 索引#表数据结构#索引组织表#每张表必然有主键 没有显示建立主键，使用第一个非空唯一索引作为主键 没有非空唯一索引，存储引擎自动创建一个6字节大小的指针row_id作为主键 逻辑存储架构#所有数据存放在表空间中，表空间由段、区、页组成 段有数据段、索引段、回滚段等。概念上数据就是索引，数据段就是B&#43;树的叶子节点，索引段是B&#43;树的非叶子节点 区是连续页组成的空间，每个区大小固定1MB。页大小16KB，每区固定64个连续页 页是存储引擎数据管理最小单位，每次读写磁盘最小一页，即16KB 行：Innodb是面向列的存储引擎，数据按行存放，每页最多存放7992行记录 B&#43;树#B&#43;树由二叉查找树和二叉平衡树发展而来，但B&#43;树是多叉树，减小树高度 B&#43;树的记录数据都在叶子节点上，非叶子节点存放的数据是索引值 叶子节点之间以指针双向连接，形成链表，方便范围查找 B&#43;树索引分成聚簇索引和二级索引，区别在于叶子节点是否存放所有行信息 B&#43;树是平衡树，所有叶子节点在同一层，查询稳定性高 优势#树高度低，减少磁盘IO 每个非叶子节点存放多个范围的下一级节点的指针，而不只是普通二叉查找树的两个，靠这一点减少树高度 在索引树上查找时，先从磁盘读取根节点，每找到下一级索引就要从磁盘读取索引页得到数据继续判断，索引树高度低，使得读取一次磁盘筛选数据效率高，大幅减少磁盘IO次数 叶子链表范围查询高效 叶子节点形成索引值的顺序链表，支持顺序遍历，便于范围查询 查询稳定性 B&#43;树使用分裂&#43;合并技术保持结构稳定性。因为插入数据导致一个节点达到容量上限，就会分裂成两个节点；因为删除数据导致两个节点太小，空间利用率低，就会合并成一个节点。这也是它的自平衡策略的一部分，同层横向扩展 B&#43;树高度变化少，一般最高四层就能存储千万以上数据 只有叶子节点才有具体数据，插入和删除对树结构影响小 对比B树#B树非叶子节点存放数据，使得一次读取磁盘筛选数据效率低，且树高度变高，磁盘IO负担大
@@ -118,10 +118,10 @@ SELECT * FROM t WHERE id = &#39;100ABC&#39;; -- 转换失败，全表扫描
 <title>InnoDB 索引 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_index/">
+<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/innodb_index/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.3ab0de8624114e793d349e0869c64ee7ba512621f5ccf5244a1da3ac1d51bb52.js" integrity="sha256-OrDehiQRTnk9NJ4IacZO57pRJiH1zPUkSh2jrB1Ru1I=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.9cb8a2e1b4ae52f511d584679482caba28fa1bcae8fdde015005b7e3b00fb9b6.js" integrity="sha256-nLii4bSuUvUR1YRnlILKuij6G8ro/d4BUAW347APubY=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -341,7 +341,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
   
 
         </li>
@@ -367,7 +367,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
   
 
         </li>
