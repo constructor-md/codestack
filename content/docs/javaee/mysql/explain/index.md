@@ -9,7 +9,7 @@ weight: 10
 ## Explain
 通过执行 explain [sql] 得到执行计划
 
-如果from中包含自查虚拟，会查并生成临时表
+如果from中包含子查询，会查并生成临时表
 
 explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行
 

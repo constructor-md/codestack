@@ -16,11 +16,12 @@ PAGE_LEVEL在每个页的64位偏移位置，占用2字节
 找到ROOT页位置，知道单页大小，使用hexdump在指定表空间找到第PAGE_NO页的64位偏移量的后两个字节即可
 
 ## 找到ROOT页信息
+```
 SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO
 FROM information_schema.INNODB_SYS_INDEXES a,
 information_schema.INNODB_SYS_TABLES b
 WHERE a.table_id = b.table_id AND a.space <> 0;
-
+```
 结果：
 !["root页信息"](./images/root-info.png "root页信息")
 其中（space、PAGE_NO）指向ROOT页

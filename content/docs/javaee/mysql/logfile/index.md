@@ -37,7 +37,7 @@ weight: 9
         从服务器的 SQL 线程会读取中继日志中的内容，并在本地执行相应的 SQL 语句，从而实现数据的同步
 
 ## 事务日志（Innodb）
-### Redo log:
+### Redo log 重做日志:
     默认文件名为ib_logfile0、ib_logfile1等，可通过innodb_log_files_in_group参数指定日志文件的数量，通过innodb_log_file_size参数指定每个日志文件的大小。
     用于保证事务的持久性
     MySQL中有大量缓存，数据修改时首先更新缓存，但是缓存并非马上同步到磁盘，即为脏页
@@ -48,7 +48,7 @@ weight: 9
     如果redo log有事务提交，则提交事务修改数据。也仅能恢复到数据最后提交的状态
     可以利用 Redo Log 将未写入磁盘的数据页恢复到崩溃前的状态
 
-### Undo log:
+### Undo log 回滚日志:
     InnoDB Undo Log 没有单独的文件名，它是存储在系统表空间（ibdata1）或独立的 undo 表空间中的。可通过innodb_undo_tablespaces参数指定独立 undo 表空间的数量
     undo log是逻辑日志，每次修改数据，undolog中出现一条反操作的记录
     可以用于事务回滚，也可以根据undolog回溯到某个特定版本的数据
