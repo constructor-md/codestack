@@ -12,7 +12,7 @@
   #
 
 通过执行 explain [sql] 得到执行计划
-如果from中包含自查虚拟，会查并生成临时表
+如果from中包含子查询，会查并生成临时表
 explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行
 
   结果列分析
@@ -71,7 +71,7 @@ All 聚簇索引的全表扫描
   <meta property="og:site_name" content="CodeStack">
   <meta property="og:title" content="Explain参数解释和查询成本分析">
   <meta property="og:description" content="Explain参数解释和查询成本分析#Explain#通过执行 explain [sql] 得到执行计划
-如果from中包含自查虚拟，会查并生成临时表
+如果from中包含子查询，会查并生成临时表
 explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行
 结果列分析#id#有几个select就有几个id，id按select出现的顺序增长，id大的先执行，null最后执行，相同则从上往下执行
 select_type#simple 简单查询，没有子查询和union primary 复杂查询中最外层迭代select subquery 包含在select中的子查询，不在from中 dependent subquery select语句出现的子查询，依赖外部查询 derived 包含在from子句的子查询，会把结果放在临时表（派生表） table#这一行的查询在访问哪个表
@@ -81,14 +81,14 @@ system MyIsm出现，表为空或者记录唯一时 const 主键索引或唯一�
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
-    <meta property="article:modified_time" content="2025-04-20T20:15:11+08:00">
+    <meta property="article:modified_time" content="2025-05-03T20:47:35+08:00">
 <title>Explain参数解释和查询成本分析 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
 <link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/explain/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.fa492ebe2184a348cfd2f4c00528dcf7b6da039507cfcc2ea9b0fbb3eb79335a.js" integrity="sha256-&#43;kkuviGEo0jP0vTABSjc97baA5UHz8wuqbD7s&#43;t5M1o=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.3ab0de8624114e793d349e0869c64ee7ba512621f5ccf5244a1da3ac1d51bb52.js" integrity="sha256-OrDehiQRTnk9NJ4IacZO57pRJiH1zPUkSh2jrB1Ru1I=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -295,7 +295,46 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/mysql/mvcc/" class="">MVCC 多版本并发控制</a>
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
   
 
         </li>
@@ -339,6 +378,24 @@ https://github.com/alex-shpak/hugo-book
 
         </li>
       
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
     
   </ul>
 
@@ -519,7 +576,7 @@ https://github.com/alex-shpak/hugo-book
   <a class="anchor" href="#explain">#</a>
 </h2>
 <p>通过执行 explain [sql] 得到执行计划</p>
-<p>如果from中包含自查虚拟，会查并生成临时表</p>
+<p>如果from中包含子查询，会查并生成临时表</p>
 <p>explain执行完之后执行show warnings，有时候可以直接拷贝出来直接使用，大多时候可以用于参考执行</p>
 <h3 id="结果列分析">
   结果列分析
@@ -709,9 +766,9 @@ https://github.com/alex-shpak/hugo-book
   <div class="flex flex-wrap justify-between">
 
 
-  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/b7676f6deeeb6334715757b962e6352e17ddfaef" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/eab6d5632bf0e7b7b35aa1cd5b46a65bf469b1b5" title='Last modified by constructor-md | 2025-05-03' target="_blank" rel="noopener">
       <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
-      <span>2025-04-20</span>
+      <span>2025-05-03</span>
     </a>
   </div>
 

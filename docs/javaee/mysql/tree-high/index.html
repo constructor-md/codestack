@@ -64,8 +64,7 @@ hexdump -C -s 49216 -n 10 goods_info_100M.ibd
 默认叶子节点高度为0，ROOT节点PAGE_LEVEL&#43;1就是这棵索引高度
 PAGE_LEVEL在每个页的64位偏移位置，占用2字节
 找到ROOT页位置，知道单页大小，使用hexdump在指定表空间找到第PAGE_NO页的64位偏移量的后两个字节即可
-找到ROOT页信息#SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO FROM information_schema.INNODB_SYS_INDEXES a, information_schema.INNODB_SYS_TABLES b WHERE a.table_id = b.table_id AND a.space &lt;&gt; 0;
-结果： 其中（space、PAGE_NO）指向ROOT页
+找到ROOT页信息#SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NOFROM information_schema.INNODB_SYS_INDEXES a,information_schema.INNODB_SYS_TABLES bWHERE a.table_id = b.table_id AND a.space &lt;&gt; 0; 结果： 其中（space、PAGE_NO）指向ROOT页
 space是表空间，可以是系统表空间（如ibdata1文件）或独立表空间（如每个InnoDB表的.ibd文件）。表空间由多个区（extent）组成，每个区包含连续的页（page）
 也就是ROOT页是space的page_no页
 查看innodb_page_size#show variables like &#39;innodb_page_size&#39; 结果： 也就是Innodb默认的页大小16KB
@@ -79,14 +78,14 @@ hexdump -C -s 49216 -n 10 goods_info_100M.ibd 前两个字节是PAGE_LEVEL，所
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
-    <meta property="article:modified_time" content="2025-04-20T20:15:11+08:00">
+    <meta property="article:modified_time" content="2025-05-03T20:47:35+08:00">
 <title>索引树高度计算 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
 <link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/tree-high/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.fa492ebe2184a348cfd2f4c00528dcf7b6da039507cfcc2ea9b0fbb3eb79335a.js" integrity="sha256-&#43;kkuviGEo0jP0vTABSjc97baA5UHz8wuqbD7s&#43;t5M1o=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.3ab0de8624114e793d349e0869c64ee7ba512621f5ccf5244a1da3ac1d51bb52.js" integrity="sha256-OrDehiQRTnk9NJ4IacZO57pRJiH1zPUkSh2jrB1Ru1I=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -293,7 +292,46 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/mysql/mvcc/" class="">MVCC 多版本并发控制</a>
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
   
 
         </li>
@@ -337,6 +375,24 @@ https://github.com/alex-shpak/hugo-book
 
         </li>
       
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
     
   </ul>
 
@@ -515,11 +571,11 @@ https://github.com/alex-shpak/hugo-book
   找到ROOT页信息
   <a class="anchor" href="#%e6%89%be%e5%88%b0root%e9%a1%b5%e4%bf%a1%e6%81%af">#</a>
 </h2>
-<p>SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO
+<pre tabindex="0"><code>SELECT b.name, a.name, index_id, type, a.space, a.PAGE_NO
 FROM information_schema.INNODB_SYS_INDEXES a,
 information_schema.INNODB_SYS_TABLES b
-WHERE a.table_id = b.table_id AND a.space &lt;&gt; 0;</p>
-<p>结果：
+WHERE a.table_id = b.table_id AND a.space &lt;&gt; 0;
+</code></pre><p>结果：
 <img src="./images/root-info.png" alt="&ldquo;root页信息&rdquo;" title="root页信息"/>
 其中（space、PAGE_NO）指向ROOT页</p>
 <p>space是表空间，可以是系统表空间（如ibdata1文件）或独立表空间（如每个InnoDB表的.ibd文件）。表空间由多个区（extent）组成，每个区包含连续的页（page）</p>
@@ -568,9 +624,9 @@ show variables like &#39;datadir&#39;
   <div class="flex flex-wrap justify-between">
 
 
-  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/b7676f6deeeb6334715757b962e6352e17ddfaef" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/eab6d5632bf0e7b7b35aa1cd5b46a65bf469b1b5" title='Last modified by constructor-md | 2025-05-03' target="_blank" rel="noopener">
       <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
-      <span>2025-04-20</span>
+      <span>2025-05-03</span>
     </a>
   </div>
 

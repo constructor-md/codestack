@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  InnoDB 事务
+  #
+
+MySQL中，事务功能主要是由 InnoDB 存储引擎来实现的
+
+  InnoDB 事务特性（ACID）及实现
+  #
+
+
+  原子性（Atomicity）
+  #
+
+事务内的操作要么全部成功，要么全部失败
+通过Undo Log实现原子性
+Undo Log 记录事务操作的反操作，或者说记录了每个操作前的数据，当事务需要回滚时，可以根据Undo Log恢复数据。
+从而实现事务内的操作要么全部执行，要么都不执行
+
+  一致性（Consistency）
+  #
+
+事务必须使数据库从一个一致性状态变换到另一个一致性状态
+依赖于原子性和隔离性的实现，还依赖于数据库自身的完整性约束(如外键、CHECK 约束等)和应用程序的正确逻辑
+
+  持久性（Durability）
+  #
+
+一个事务一旦被提交了，那么对数据库中的数据的改变就是永久性的，即便是在数据库系统遇到故障的情况下也不会丢失提交事务的操作
+通过数据写入磁盘，以及Redo Log记录写入内存未写入磁盘的操作，在系统崩溃恢复时写入磁盘。保证持久性
+Redo Log本身在磁盘顺序写入，速度很快
+
+  隔离性（Isolation）
+  #
+
+多个并发事务之间要相互隔离。对于任意两个并发的事务T1和T2，在事务T1看来，T2要么在T1开始之前就已经结束，要么在T1结束之后才开始
+通过MVCC和锁机制实现隔离性
+先说明MVCC隔离性实现原理，锁机制放在锁的篇章中
+
+  MVCC
+  #
+
+innodb通过ReadView快照和版本链实现MVCC
+
+  ReadView 快照
+  #
+
+Readview是代码中的对象，主要有如下属性：
+
+m_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交的事务）
+min_trx_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最早的未提交事务）
+max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（下一个事务）
+creator_trx_id: 生成该ReadView的事务的id（所属事务）
+
+
+  版本链
+  #
+
+在Innodb中，以最新记录和 undo log 中的历史记录形成了版本链
+Innodb的每行数据，都有两个隐藏字段：事务ID和回滚指针
+
+事务ID代表这行数据由哪个事务最后更新，回滚指针指向Undo Log中这行数据的上一个版本
+Undo Log中记录了数据的每个版本，同样也携带着修改成该版本的事务ID和指向上一个版本的回滚指针
+每行最新的数据，以及Undo Log中的历史版本中的数据，的回滚指针们形成了一条链表，即版本链
+事务的每个修改，不论是否已经提交，都会被记录在版本链上
+
+
+MySQL 中有专门的 Purge 线程，会定期检查 Undo Log，删除那些已经不再需要的记录
+Purge 操作会遍历 Undo Log 链表，找到那些没有被任何活动事务引用的节点，并将其从磁盘上删除，释放空间">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_transaction/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="InnoDB 事务">
+  <meta property="og:description" content="InnoDB 事务#MySQL中，事务功能主要是由 InnoDB 存储引擎来实现的
+InnoDB 事务特性（ACID）及实现#原子性（Atomicity）#事务内的操作要么全部成功，要么全部失败
+通过Undo Log实现原子性
+Undo Log 记录事务操作的反操作，或者说记录了每个操作前的数据，当事务需要回滚时，可以根据Undo Log恢复数据。
+从而实现事务内的操作要么全部执行，要么都不执行
+一致性（Consistency）#事务必须使数据库从一个一致性状态变换到另一个一致性状态
+依赖于原子性和隔离性的实现，还依赖于数据库自身的完整性约束(如外键、CHECK 约束等)和应用程序的正确逻辑
+持久性（Durability）#一个事务一旦被提交了，那么对数据库中的数据的改变就是永久性的，即便是在数据库系统遇到故障的情况下也不会丢失提交事务的操作
+通过数据写入磁盘，以及Redo Log记录写入内存未写入磁盘的操作，在系统崩溃恢复时写入磁盘。保证持久性
+Redo Log本身在磁盘顺序写入，速度很快
+隔离性（Isolation）#多个并发事务之间要相互隔离。对于任意两个并发的事务T1和T2，在事务T1看来，T2要么在T1开始之前就已经结束，要么在T1结束之后才开始
+通过MVCC和锁机制实现隔离性
+先说明MVCC隔离性实现原理，锁机制放在锁的篇章中
+MVCC#innodb通过ReadView快照和版本链实现MVCC
+ReadView 快照#Readview是代码中的对象，主要有如下属性：
+m_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交的事务） min_trx_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最早的未提交事务） max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（下一个事务） creator_trx_id: 生成该ReadView的事务的id（所属事务） 版本链#在Innodb中，以最新记录和 undo log 中的历史记录形成了版本链
+Innodb的每行数据，都有两个隐藏字段：事务ID和回滚指针
+事务ID代表这行数据由哪个事务最后更新，回滚指针指向Undo Log中这行数据的上一个版本 Undo Log中记录了数据的每个版本，同样也携带着修改成该版本的事务ID和指向上一个版本的回滚指针 每行最新的数据，以及Undo Log中的历史版本中的数据，的回滚指针们形成了一条链表，即版本链 事务的每个修改，不论是否已经提交，都会被记录在版本链上 MySQL 中有专门的 Purge 线程，会定期检查 Undo Log，删除那些已经不再需要的记录
+Purge 操作会遍历 Undo Log 链表，找到那些没有被任何活动事务引用的节点，并将其从磁盘上删除，释放空间">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-03T20:47:35+08:00">
+<title>InnoDB 事务 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_transaction/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.3ab0de8624114e793d349e0869c64ee7ba512621f5ccf5244a1da3ac1d51bb52.js" integrity="sha256-OrDehiQRTnk9NJ4IacZO57pRJiH1zPUkSh2jrB1Ru1I=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="active">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>InnoDB 事务</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#innodb-事务特性acid及实现">InnoDB 事务特性（ACID）及实现</a>
+      <ul>
+        <li><a href="#原子性atomicity">原子性（Atomicity）</a></li>
+        <li><a href="#一致性consistency">一致性（Consistency）</a></li>
+        <li><a href="#持久性durability">持久性（Durability）</a></li>
+        <li><a href="#隔离性isolation">隔离性（Isolation）</a></li>
+        <li><a href="#mvcc">MVCC</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#版本链-1">版本链</a></li>
+    <li><a href="#readview-快照数据">ReadView 快照数据</a></li>
+    <li><a href="#readview如何实现读已提交和可重复读">ReadView如何实现读已提交和可重复读？</a></li>
+    <li><a href="#事务隔离级别与mvcc">事务隔离级别与MVCC</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="innodb-事务">
+  InnoDB 事务
+  <a class="anchor" href="#innodb-%e4%ba%8b%e5%8a%a1">#</a>
+</h1>
+<p>MySQL中，事务功能主要是由 InnoDB 存储引擎来实现的</p>
+<h2 id="innodb-事务特性acid及实现">
+  InnoDB 事务特性（ACID）及实现
+  <a class="anchor" href="#innodb-%e4%ba%8b%e5%8a%a1%e7%89%b9%e6%80%a7acid%e5%8f%8a%e5%ae%9e%e7%8e%b0">#</a>
+</h2>
+<h3 id="原子性atomicity">
+  原子性（Atomicity）
+  <a class="anchor" href="#%e5%8e%9f%e5%ad%90%e6%80%a7atomicity">#</a>
+</h3>
+<p>事务内的操作要么全部成功，要么全部失败</p>
+<p>通过Undo Log实现原子性<br>
+Undo Log 记录事务操作的反操作，或者说记录了每个操作前的数据，当事务需要回滚时，可以根据Undo Log恢复数据。<br>
+从而实现事务内的操作要么全部执行，要么都不执行</p>
+<h3 id="一致性consistency">
+  一致性（Consistency）
+  <a class="anchor" href="#%e4%b8%80%e8%87%b4%e6%80%a7consistency">#</a>
+</h3>
+<p>事务必须使数据库从一个一致性状态变换到另一个一致性状态<br>
+依赖于原子性和隔离性的实现，还依赖于数据库自身的完整性约束(如外键、CHECK 约束等)和应用程序的正确逻辑</p>
+<h3 id="持久性durability">
+  持久性（Durability）
+  <a class="anchor" href="#%e6%8c%81%e4%b9%85%e6%80%a7durability">#</a>
+</h3>
+<p>一个事务一旦被提交了，那么对数据库中的数据的改变就是永久性的，即便是在数据库系统遇到故障的情况下也不会丢失提交事务的操作<br>
+通过数据写入磁盘，以及Redo Log记录写入内存未写入磁盘的操作，在系统崩溃恢复时写入磁盘。保证持久性<br>
+Redo Log本身在磁盘顺序写入，速度很快</p>
+<h3 id="隔离性isolation">
+  隔离性（Isolation）
+  <a class="anchor" href="#%e9%9a%94%e7%a6%bb%e6%80%a7isolation">#</a>
+</h3>
+<p>多个并发事务之间要相互隔离。对于任意两个并发的事务T1和T2，在事务T1看来，T2要么在T1开始之前就已经结束，要么在T1结束之后才开始</p>
+<p>通过MVCC和锁机制实现隔离性</p>
+<p>先说明MVCC隔离性实现原理，锁机制放在锁的篇章中</p>
+<h3 id="mvcc">
+  MVCC
+  <a class="anchor" href="#mvcc">#</a>
+</h3>
+<p>innodb通过ReadView快照和版本链实现MVCC</p>
+<h4 id="readview-快照">
+  ReadView 快照
+  <a class="anchor" href="#readview-%e5%bf%ab%e7%85%a7">#</a>
+</h4>
+<p>Readview是代码中的对象，主要有如下属性：</p>
+<ul>
+<li>m_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交的事务）</li>
+<li>min_trx_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最早的未提交事务）</li>
+<li>max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（下一个事务）</li>
+<li>creator_trx_id: 生成该ReadView的事务的id（所属事务）</li>
+</ul>
+<h4 id="版本链">
+  版本链
+  <a class="anchor" href="#%e7%89%88%e6%9c%ac%e9%93%be">#</a>
+</h4>
+<p>在Innodb中，以最新记录和 undo log 中的历史记录形成了版本链<br>
+Innodb的每行数据，都有两个隐藏字段：事务ID和回滚指针</p>
+<ul>
+<li>事务ID代表这行数据由哪个事务最后更新，回滚指针指向Undo Log中这行数据的上一个版本</li>
+<li>Undo Log中记录了数据的每个版本，同样也携带着修改成该版本的事务ID和指向上一个版本的回滚指针</li>
+<li>每行最新的数据，以及Undo Log中的历史版本中的数据，的回滚指针们形成了一条链表，即版本链</li>
+<li>事务的每个修改，不论是否已经提交，都会被记录在版本链上</li>
+</ul>
+<blockquote>
+<p>MySQL 中有专门的 Purge 线程，会定期检查 Undo Log，删除那些已经不再需要的记录<br>
+Purge 操作会遍历 Undo Log 链表，找到那些没有被任何活动事务引用的节点，并将其从磁盘上删除，释放空间</p></blockquote>
+<h4 id="以可重复读为例说明mvcc的实现">
+  以可重复读为例说明MVCC的实现
+  <a class="anchor" href="#%e4%bb%a5%e5%8f%af%e9%87%8d%e5%a4%8d%e8%af%bb%e4%b8%ba%e4%be%8b%e8%af%b4%e6%98%8emvcc%e7%9a%84%e5%ae%9e%e7%8e%b0">#</a>
+</h4>
+<p>在事务隔离级别为可重复读情况下，执行select前，会先生成ReadView<br>
+通过ReadView在版本链中进行比较，可知版本链上的哪些数据是可以被自己访问的<br>
+trx_id是该行的版本链上某个版本的事务ID</p>
+<ul>
+<li>trx_id == creator_trx_id Readview自己修改的数据，可以访问</li>
+<li>trx_id &lt; min_trx_id Readview创建之前的已提交数据，可以访问</li>
+<li>trx_id &gt; max_trx_id 创建在Readview事务之后的数据，不可访问</li>
+<li>min_trx_id &lt;= trx_id &lt;= max_trx_id Readview创建时尚未提交的数据，不可访问</li>
+</ul>
+<p>所以：通过ReadView的事务信息，以及版本链上数据的事务信息，以及事务ID的全局自增，可以得知当前事务可以访问哪些数据！</p>
+<p>对可重复读而言，仅在第一次select时生成ReadView即可<br>
+此后每次查询，访问到的数据都是以该ReadView为基准<br>
+从而每次要么访问到自己的最新修改，要么一直是生成当时的最新提交数据，不会变化<br>
+同理可看其他事务级别：</p>
+<ul>
+<li>读已提交：
+每次select都会生成ReadView，新的ReadView可以访问新提交的数据<br>
+于是每次select都可以访问到最新的提交数据，或者是自己的修改数据</li>
+<li>读未提交：
+每次直接访问最新的版本链数据，不关心是否提交，不需要MVCC</li>
+<li>串行化：
+通过加锁互斥访问，不需要MVCC</li>
+</ul>
+<h1 id="mvcc-多版本并发控制">
+  MVCC 多版本并发控制
+  <a class="anchor" href="#mvcc-%e5%a4%9a%e7%89%88%e6%9c%ac%e5%b9%b6%e5%8f%91%e6%8e%a7%e5%88%b6">#</a>
+</h1>
+<h2 id="版本链-1">
+  版本链
+  <a class="anchor" href="#%e7%89%88%e6%9c%ac%e9%93%be-1">#</a>
+</h2>
+<p>数据库中，以最新记录和undolog中的历史记录形成了版本链</p>
+<p>版本链中每个版本，除了具体行数据之外，还有该版本的事务ID、和回滚指针，每一行记录都有这两个隐藏列</p>
+<p>每个版本的回滚指针指向上一个版本</p>
+<h2 id="readview-快照数据">
+  ReadView 快照数据
+  <a class="anchor" href="#readview-%e5%bf%ab%e7%85%a7%e6%95%b0%e6%8d%ae">#</a>
+</h2>
+<p>作用：让数据库知道在具体查询的时候，应该去查询哪个版本的数据</p>
+<p>数据结构：代码里的一个对象</p>
+<ul>
+<li>m_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交）</li>
+<li>min_trax_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最老的一个未提交）</li>
+<li>max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（未生成即将生成）</li>
+<li>creator_trx_id: 生成该ReadView的事务的id（创建者）</li>
+</ul>
+<p>ReadView如何判断版本链中哪个版本可用？</p>
+<ul>
+<li>Trx_id == creator_trx_id 可以访问这个版本（创建者可以访问）</li>
+<li>Trx_id &lt; min_trx_id 可以访问这个版本（可以访问已提交的数据）</li>
+<li>Trx_id &gt; max_trx_id 不可以访问这个版本（当前事务不能访问超过当前版本链的数据）</li>
+<li>Min_trx_id &lt;= trx_id &lt;= max_trx_id 如果trx_id在m_ids中，就可以不访问这个版本，因为里面的数据都没有commit</li>
+</ul>
+<h2 id="readview如何实现读已提交和可重复读">
+  ReadView如何实现读已提交和可重复读？
+  <a class="anchor" href="#readview%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e8%af%bb%e5%b7%b2%e6%8f%90%e4%ba%a4%e5%92%8c%e5%8f%af%e9%87%8d%e5%a4%8d%e8%af%bb">#</a>
+</h2>
+<p>版本链是全局的，没有事务时版本链的头部是最新数据，后面是每个版本的历史数据</p>
+<p>如果有多个事务同时更新某一行数据，每个事务的更新，都会在版本链上生成一个版本</p>
+<ol>
+<li>执行一个select前
+先生成一个当前事务的ReadView，ReadView包含上述数据</li>
+<li>让ReadView在版本链从头到尾比较：(版本数据对查询的可见性)</li>
+</ol>
+<ul>
+<li>如果该版本是当前事务提交的，那自然可以访问该数据，且该版本未提交也可以访问</li>
+<li>如果该版本不是当前事务提交，但是是已提交的数据，当然可以访问</li>
+<li>如果该版本数据是当前事务之后生成的事务生成的版本，那么肯定没有提交，不能访问</li>
+<li>如果该版本数据是当前事务生成ReadView时的未提交事务之一，那么不能访问这些未提交的数据</li>
+</ul>
+<h2 id="事务隔离级别与mvcc">
+  事务隔离级别与MVCC
+  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1%e9%9a%94%e7%a6%bb%e7%ba%a7%e5%88%ab%e4%b8%8emvcc">#</a>
+</h2>
+<ul>
+<li>
+<p>如果是读已提交：
+则每次select都会生成ReadView，使得除了creator_trx_id以外的数据有所变化</p>
+<p>于是每次select都可以访问到最新的提交数据，或者是自己的修改数据</p>
+<p>访问到的最新提交数据可能变化</p>
+</li>
+<li>
+<p>如果是可重复读：
+仅在第一次select生成ReadView</p>
+<p>从而每次要么访问到自己的最新修改，要么一直是生成当时的最新提交数据，不会变化</p>
+</li>
+<li>
+<p>如果是读未提交：
+则每次直接访问最新的版本链数据，不关心是否提交，不需要MVCC</p>
+</li>
+<li>
+<p>如果是串行化：
+则通过加锁互斥访问，不需要MVCC</p>
+</li>
+</ul>
+<blockquote>
+<p>幻读问题的解决：</p>
+<p>可明确的是：仅在快照读的情况下可以解决幻读，当前读不能解决幻读</p>
+<p>幻读指的是两次查询前后，因为中间有事务提交，导致查询得到的数据量不符合</p></blockquote>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/eab6d5632bf0e7b7b35aa1cd5b46a65bf469b1b5" title='Last modified by constructor-md | 2025-05-03' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-03</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#innodb-事务特性acid及实现">InnoDB 事务特性（ACID）及实现</a>
+      <ul>
+        <li><a href="#原子性atomicity">原子性（Atomicity）</a></li>
+        <li><a href="#一致性consistency">一致性（Consistency）</a></li>
+        <li><a href="#持久性durability">持久性（Durability）</a></li>
+        <li><a href="#隔离性isolation">隔离性（Isolation）</a></li>
+        <li><a href="#mvcc">MVCC</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li><a href="#版本链-1">版本链</a></li>
+    <li><a href="#readview-快照数据">ReadView 快照数据</a></li>
+    <li><a href="#readview如何实现读已提交和可重复读">ReadView如何实现读已提交和可重复读？</a></li>
+    <li><a href="#事务隔离级别与mvcc">事务隔离级别与MVCC</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

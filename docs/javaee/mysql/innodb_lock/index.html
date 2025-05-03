@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  InnoDB 锁机制
+  #
+
+
+  锁分类和特性
+  #
+
+
+S锁与X锁互斥，与S锁兼容
+X锁与S/X锁互斥
+加锁是实际是锁索引或者锁表
+
+如果用了主键就锁聚簇索引
+如果用了二级索引就锁定二级索引再锁定聚簇索引
+如果没用到索引，就锁表
+
+
+锁的释放时机是事务提交或回滚
+
+
+  行级锁
+  #
+
+
+基本的加锁是临键锁，因为一些条件转换为间隙锁、行锁、表锁
+
+
+  记录锁（S/X锁）
+  #
+
+单索引值锁
+
+  间隙锁（S锁）
+  #
+
+
+在两行/两索引之间的左开右开区间锁
+间隙锁S与插入意向锁X互斥，作用是防止其他事务插入数据，避免幻读
+间隙锁S之间是兼容的
+
+
+  临键锁（S/X记录锁&#43;s间隙锁）
+  #
+
+
+对记录行，以及以记录行本身主键/索引值为右边界，往前一个主键值/索引值为左边界的，左开右闭区间锁
+临键锁的记录部分与其他临键锁的记录部分根据记录锁的S/X区分冲突
+
+临键锁的记录部分与其他临键锁的间隙锁不会冲突，不如说不存在加了间隙锁还有记录在中间的情况，也不存在有记录锁居然能加间隙锁的情况
+临键锁的间隙锁和其他临键锁的间隙锁不冲突
+
+
+
+
+  插入意向锁（X模式间隙锁）
+  #
+
+
+与普通S间隙锁互斥，插入意向锁之间不互斥（特殊）
+insert插入数据时，需要对所在间隙加插入意向锁，多个事务可以对同一间隙加插入意向锁
+如果该间隙存在普通间隙锁，则插入意向锁会被阻塞
+多个事务插入数据，只要对应主键和索引无约束冲突，就可以并发执行
+
+
+  表级锁
+  #
+
+
+  表锁（S/X锁）
+  #
+
+
+当进行需要加锁操作，但是未能明确指定主键/索引时，Innodb会扫描全表，对主键聚簇索引加临键锁（覆盖所有行，等效表锁）
+或显示使用 Lock Tables xxx write/read (Innodb不推荐，应优先行锁)
+是极端状态下的行锁集合（全表行锁&#43;间隙锁），性能极差
+S表锁阻塞各种行X锁，不阻塞S锁。X表锁阻塞各种行X锁
+
+
+  意向锁（IS/IX锁，表级信号锁）
+  #
+
+
+当事务对某行加行级S锁，自动对表加意向共享锁（IS锁）
+当事务对某行加行级X锁，自动对表加意向排他锁（IX锁）
+永远与行级S/X锁共存（行锁必然带有对应意向锁）
+作用仅是标记“表中存在行锁”，以与全表锁互斥，不阻塞其他行锁和表意向锁
+
+
+  语句加锁情况枚举（可重复读级别）
+  #
+
+可以根据语句加锁情况和对应区域锁的S/X模式，来理论判断锁冲突情况
+
+  普通查询
+  #
+
+
+不加锁，快照读，不会导致并发阻塞。且因为是快照读，不会幻读
+基于MVCC进行快照读，查询开始时生成快照，可读取已提交事务和本快照事务修改的数据
+
+
+  SELECT &hellip; FOR UPDATE
+  #
+
+
+唯一索引等值查询且匹配到数据，对匹配行加行锁（X锁）
+唯一索引范围查询且匹配到数据，对所有匹配行加临键锁（X记录锁&#43;S间隙锁）
+唯一索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）
+普通索引范围查询匹配到数据，范围内索引项加临键锁（X记录锁&#43;S间隙锁），对应主键行锁（X锁）
+普通索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）
+不使用索引/索引失效，退化为全表锁（各行X锁，间隙S锁）
+
+
+  SELECT &hellip; LOCK IN SHARE MODE
+  #
+
+
+唯一索引等值查询且匹配到数据，对匹配行加行锁（S锁）
+唯一索引范围查询且匹配到数据，对所有匹配行加临键锁（S记录锁&#43;S间隙锁）
+唯一索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）
+普通索引范围查询匹配到数据，范围内索引项加临键锁（S记录锁&#43;S间隙锁），对应主键行锁（S锁）
+普通索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）
+不使用索引/索引失效，退化为全表锁（各行S锁，间隙S锁）
+
+
+  insert
+  #
+
+
+单行插入
+
+
+尝试对插入间隙加插入意向锁X锁，如果存在间隙锁S锁，就阻塞等待
+加锁成功后执行插入，对插入位置加X锁，仅自己能插入，并执行插入
+如果位置上有别的数据插入的数据，则阻塞等待其他事务提交释放锁
+多个事务可以并发插入同个间隙的不同位置，不互相阻塞
+
+
+批量插入
+逐行执行多个单行插入，重复上述过程
+
+
+  update
+  #
+
+
+对where条件匹配的行加X锁
+
+如果用了唯一索引（索引扫描），对匹配索引值加记录X锁
+如果用了普通索引（索引扫描），对匹配索引值加临键X锁
+如果没有使用索引或者索引失效（全表扫描），对全表加X表锁(所有记录X临键锁)
+
+
+如果会更新索引字段，旧索引项加X锁
+
+
+  delete
+  #
+
+
+对where条件匹配的行加X锁
+
+如果用了唯一索引（索引扫描），对匹配索引值加记录X锁
+如果用了普通索引（索引扫描），对匹配索引值加临键X锁
+如果没有使用索引或者索引失效（全表扫描），对全表加X表锁(所有记录X临键锁)
+
+
+
+
+  可以优化的操作方向
+  #
+
+
+  测试机检查
+  #
+
+测试SQL执行究竟是加表锁还是行锁等，修改以避免表锁">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_lock/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="InnoDB 锁机制">
+  <meta property="og:description" content="InnoDB 锁机制#锁分类和特性#S锁与X锁互斥，与S锁兼容 X锁与S/X锁互斥 加锁是实际是锁索引或者锁表 如果用了主键就锁聚簇索引 如果用了二级索引就锁定二级索引再锁定聚簇索引 如果没用到索引，就锁表 锁的释放时机是事务提交或回滚 行级锁#基本的加锁是临键锁，因为一些条件转换为间隙锁、行锁、表锁 记录锁（S/X锁）#单索引值锁
+间隙锁（S锁）#在两行/两索引之间的左开右开区间锁 间隙锁S与插入意向锁X互斥，作用是防止其他事务插入数据，避免幻读 间隙锁S之间是兼容的 临键锁（S/X记录锁&#43;s间隙锁）#对记录行，以及以记录行本身主键/索引值为右边界，往前一个主键值/索引值为左边界的，左开右闭区间锁 临键锁的记录部分与其他临键锁的记录部分根据记录锁的S/X区分冲突 临键锁的记录部分与其他临键锁的间隙锁不会冲突，不如说不存在加了间隙锁还有记录在中间的情况，也不存在有记录锁居然能加间隙锁的情况 临键锁的间隙锁和其他临键锁的间隙锁不冲突 插入意向锁（X模式间隙锁）#与普通S间隙锁互斥，插入意向锁之间不互斥（特殊） insert插入数据时，需要对所在间隙加插入意向锁，多个事务可以对同一间隙加插入意向锁 如果该间隙存在普通间隙锁，则插入意向锁会被阻塞 多个事务插入数据，只要对应主键和索引无约束冲突，就可以并发执行 表级锁#表锁（S/X锁）#当进行需要加锁操作，但是未能明确指定主键/索引时，Innodb会扫描全表，对主键聚簇索引加临键锁（覆盖所有行，等效表锁） 或显示使用 Lock Tables xxx write/read (Innodb不推荐，应优先行锁) 是极端状态下的行锁集合（全表行锁&#43;间隙锁），性能极差 S表锁阻塞各种行X锁，不阻塞S锁。X表锁阻塞各种行X锁 意向锁（IS/IX锁，表级信号锁）#当事务对某行加行级S锁，自动对表加意向共享锁（IS锁） 当事务对某行加行级X锁，自动对表加意向排他锁（IX锁） 永远与行级S/X锁共存（行锁必然带有对应意向锁） 作用仅是标记“表中存在行锁”，以与全表锁互斥，不阻塞其他行锁和表意向锁 语句加锁情况枚举（可重复读级别）#可以根据语句加锁情况和对应区域锁的S/X模式，来理论判断锁冲突情况
+普通查询#不加锁，快照读，不会导致并发阻塞。且因为是快照读，不会幻读 基于MVCC进行快照读，查询开始时生成快照，可读取已提交事务和本快照事务修改的数据 SELECT … FOR UPDATE#唯一索引等值查询且匹配到数据，对匹配行加行锁（X锁） 唯一索引范围查询且匹配到数据，对所有匹配行加临键锁（X记录锁&#43;S间隙锁） 唯一索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁） 普通索引范围查询匹配到数据，范围内索引项加临键锁（X记录锁&#43;S间隙锁），对应主键行锁（X锁） 普通索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁） 不使用索引/索引失效，退化为全表锁（各行X锁，间隙S锁） SELECT … LOCK IN SHARE MODE#唯一索引等值查询且匹配到数据，对匹配行加行锁（S锁） 唯一索引范围查询且匹配到数据，对所有匹配行加临键锁（S记录锁&#43;S间隙锁） 唯一索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁） 普通索引范围查询匹配到数据，范围内索引项加临键锁（S记录锁&#43;S间隙锁），对应主键行锁（S锁） 普通索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁） 不使用索引/索引失效，退化为全表锁（各行S锁，间隙S锁） insert#单行插入 尝试对插入间隙加插入意向锁X锁，如果存在间隙锁S锁，就阻塞等待 加锁成功后执行插入，对插入位置加X锁，仅自己能插入，并执行插入 如果位置上有别的数据插入的数据，则阻塞等待其他事务提交释放锁 多个事务可以并发插入同个间隙的不同位置，不互相阻塞 批量插入 逐行执行多个单行插入，重复上述过程 update#对where条件匹配的行加X锁 如果用了唯一索引（索引扫描），对匹配索引值加记录X锁 如果用了普通索引（索引扫描），对匹配索引值加临键X锁 如果没有使用索引或者索引失效（全表扫描），对全表加X表锁(所有记录X临键锁) 如果会更新索引字段，旧索引项加X锁 delete#对where条件匹配的行加X锁 如果用了唯一索引（索引扫描），对匹配索引值加记录X锁 如果用了普通索引（索引扫描），对匹配索引值加临键X锁 如果没有使用索引或者索引失效（全表扫描），对全表加X表锁(所有记录X临键锁) 可以优化的操作方向#测试机检查#测试SQL执行究竟是加表锁还是行锁等，修改以避免表锁">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-03T20:47:35+08:00">
+<title>InnoDB 锁机制 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_lock/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.3ab0de8624114e793d349e0869c64ee7ba512621f5ccf5244a1da3ac1d51bb52.js" integrity="sha256-OrDehiQRTnk9NJ4IacZO57pRJiH1zPUkSh2jrB1Ru1I=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="active">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>InnoDB 锁机制</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#锁分类和特性">锁分类和特性</a>
+      <ul>
+        <li><a href="#行级锁">行级锁</a></li>
+        <li><a href="#插入意向锁x模式间隙锁">插入意向锁（X模式间隙锁）</a></li>
+        <li><a href="#表级锁">表级锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#语句加锁情况枚举可重复读级别">语句加锁情况枚举（可重复读级别）</a>
+      <ul>
+        <li><a href="#普通查询">普通查询</a></li>
+        <li><a href="#select--for-update">SELECT &hellip; FOR UPDATE</a></li>
+        <li><a href="#select--lock-in-share-mode">SELECT &hellip; LOCK IN SHARE MODE</a></li>
+        <li><a href="#insert">insert</a></li>
+        <li><a href="#update">update</a></li>
+        <li><a href="#delete">delete</a></li>
+      </ul>
+    </li>
+    <li><a href="#可以优化的操作方向">可以优化的操作方向</a>
+      <ul>
+        <li><a href="#测试机检查">测试机检查</a></li>
+        <li><a href="#慎用显式加锁">慎用显式加锁</a></li>
+        <li><a href="#减小加锁范围">减小加锁范围</a></li>
+        <li><a href="#减少持锁时间">减少持锁时间</a></li>
+      </ul>
+    </li>
+    <li><a href="#需要警惕的死锁操作场景">需要警惕的死锁操作场景</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="innodb-锁机制">
+  InnoDB 锁机制
+  <a class="anchor" href="#innodb-%e9%94%81%e6%9c%ba%e5%88%b6">#</a>
+</h1>
+<h2 id="锁分类和特性">
+  锁分类和特性
+  <a class="anchor" href="#%e9%94%81%e5%88%86%e7%b1%bb%e5%92%8c%e7%89%b9%e6%80%a7">#</a>
+</h2>
+<ul>
+<li>S锁与X锁互斥，与S锁兼容</li>
+<li>X锁与S/X锁互斥</li>
+<li>加锁是实际是锁索引或者锁表
+<ul>
+<li>如果用了主键就锁聚簇索引</li>
+<li>如果用了二级索引就锁定二级索引再锁定聚簇索引</li>
+<li>如果没用到索引，就锁表</li>
+</ul>
+</li>
+<li>锁的释放时机是事务提交或回滚</li>
+</ul>
+<h3 id="行级锁">
+  行级锁
+  <a class="anchor" href="#%e8%a1%8c%e7%ba%a7%e9%94%81">#</a>
+</h3>
+<ul>
+<li>基本的加锁是临键锁，因为一些条件转换为间隙锁、行锁、表锁</li>
+</ul>
+<h4 id="记录锁sx锁">
+  记录锁（S/X锁）
+  <a class="anchor" href="#%e8%ae%b0%e5%bd%95%e9%94%81sx%e9%94%81">#</a>
+</h4>
+<p>单索引值锁</p>
+<h4 id="间隙锁s锁">
+  间隙锁（S锁）
+  <a class="anchor" href="#%e9%97%b4%e9%9a%99%e9%94%81s%e9%94%81">#</a>
+</h4>
+<ul>
+<li>在两行/两索引之间的左开右开区间锁</li>
+<li>间隙锁S与插入意向锁X互斥，作用是防止其他事务插入数据，避免幻读</li>
+<li>间隙锁S之间是兼容的</li>
+</ul>
+<h4 id="临键锁sx记录锁s间隙锁">
+  临键锁（S/X记录锁+s间隙锁）
+  <a class="anchor" href="#%e4%b8%b4%e9%94%ae%e9%94%81sx%e8%ae%b0%e5%bd%95%e9%94%81s%e9%97%b4%e9%9a%99%e9%94%81">#</a>
+</h4>
+<ul>
+<li>对记录行，以及以记录行本身主键/索引值为右边界，往前一个主键值/索引值为左边界的，左开右闭区间锁</li>
+<li>临键锁的记录部分与其他临键锁的记录部分根据记录锁的S/X区分冲突
+<ul>
+<li>临键锁的记录部分与其他临键锁的间隙锁不会冲突，不如说不存在加了间隙锁还有记录在中间的情况，也不存在有记录锁居然能加间隙锁的情况</li>
+<li>临键锁的间隙锁和其他临键锁的间隙锁不冲突</li>
+</ul>
+</li>
+</ul>
+<h3 id="插入意向锁x模式间隙锁">
+  插入意向锁（X模式间隙锁）
+  <a class="anchor" href="#%e6%8f%92%e5%85%a5%e6%84%8f%e5%90%91%e9%94%81x%e6%a8%a1%e5%bc%8f%e9%97%b4%e9%9a%99%e9%94%81">#</a>
+</h3>
+<ul>
+<li>与普通S间隙锁互斥，插入意向锁之间不互斥（特殊）</li>
+<li>insert插入数据时，需要对所在间隙加插入意向锁，多个事务可以对同一间隙加插入意向锁</li>
+<li>如果该间隙存在普通间隙锁，则插入意向锁会被阻塞</li>
+<li>多个事务插入数据，只要对应主键和索引无约束冲突，就可以并发执行</li>
+</ul>
+<h3 id="表级锁">
+  表级锁
+  <a class="anchor" href="#%e8%a1%a8%e7%ba%a7%e9%94%81">#</a>
+</h3>
+<h4 id="表锁sx锁">
+  表锁（S/X锁）
+  <a class="anchor" href="#%e8%a1%a8%e9%94%81sx%e9%94%81">#</a>
+</h4>
+<ul>
+<li>当进行需要加锁操作，但是未能明确指定主键/索引时，Innodb会扫描全表，对主键聚簇索引加临键锁（覆盖所有行，等效表锁）</li>
+<li>或显示使用 Lock Tables xxx write/read (Innodb不推荐，应优先行锁)</li>
+<li>是极端状态下的行锁集合（全表行锁+间隙锁），性能极差</li>
+<li>S表锁阻塞各种行X锁，不阻塞S锁。X表锁阻塞各种行X锁</li>
+</ul>
+<h4 id="意向锁isix锁表级信号锁">
+  意向锁（IS/IX锁，表级信号锁）
+  <a class="anchor" href="#%e6%84%8f%e5%90%91%e9%94%81isix%e9%94%81%e8%a1%a8%e7%ba%a7%e4%bf%a1%e5%8f%b7%e9%94%81">#</a>
+</h4>
+<ul>
+<li>当事务对某行加行级S锁，自动对表加意向共享锁（IS锁）</li>
+<li>当事务对某行加行级X锁，自动对表加意向排他锁（IX锁）</li>
+<li>永远与行级S/X锁共存（行锁必然带有对应意向锁）</li>
+<li>作用仅是标记“表中存在行锁”，以与全表锁互斥，不阻塞其他行锁和表意向锁</li>
+</ul>
+<h2 id="语句加锁情况枚举可重复读级别">
+  语句加锁情况枚举（可重复读级别）
+  <a class="anchor" href="#%e8%af%ad%e5%8f%a5%e5%8a%a0%e9%94%81%e6%83%85%e5%86%b5%e6%9e%9a%e4%b8%be%e5%8f%af%e9%87%8d%e5%a4%8d%e8%af%bb%e7%ba%a7%e5%88%ab">#</a>
+</h2>
+<p>可以根据语句加锁情况和对应区域锁的S/X模式，来理论判断锁冲突情况</p>
+<h3 id="普通查询">
+  普通查询
+  <a class="anchor" href="#%e6%99%ae%e9%80%9a%e6%9f%a5%e8%af%a2">#</a>
+</h3>
+<ul>
+<li>不加锁，快照读，不会导致并发阻塞。且因为是快照读，不会幻读</li>
+<li>基于MVCC进行快照读，查询开始时生成快照，可读取已提交事务和本快照事务修改的数据</li>
+</ul>
+<h3 id="select--for-update">
+  SELECT &hellip; FOR UPDATE
+  <a class="anchor" href="#select--for-update">#</a>
+</h3>
+<ul>
+<li>唯一索引等值查询且匹配到数据，对匹配行加行锁（X锁）</li>
+<li>唯一索引范围查询且匹配到数据，对所有匹配行加临键锁（X记录锁+S间隙锁）</li>
+<li>唯一索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）</li>
+<li>普通索引范围查询匹配到数据，范围内索引项加临键锁（X记录锁+S间隙锁），对应主键行锁（X锁）</li>
+<li>普通索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）</li>
+<li>不使用索引/索引失效，退化为全表锁（各行X锁，间隙S锁）</li>
+</ul>
+<h3 id="select--lock-in-share-mode">
+  SELECT &hellip; LOCK IN SHARE MODE
+  <a class="anchor" href="#select--lock-in-share-mode">#</a>
+</h3>
+<ul>
+<li>唯一索引等值查询且匹配到数据，对匹配行加行锁（S锁）</li>
+<li>唯一索引范围查询且匹配到数据，对所有匹配行加临键锁（S记录锁+S间隙锁）</li>
+<li>唯一索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）</li>
+<li>普通索引范围查询匹配到数据，范围内索引项加临键锁（S记录锁+S间隙锁），对应主键行锁（S锁）</li>
+<li>普通索引查询未匹配到数据，目标值所在间隙加间隙锁（S锁）</li>
+<li>不使用索引/索引失效，退化为全表锁（各行S锁，间隙S锁）</li>
+</ul>
+<h3 id="insert">
+  insert
+  <a class="anchor" href="#insert">#</a>
+</h3>
+<ol>
+<li>单行插入</li>
+</ol>
+<ul>
+<li>尝试对插入间隙加插入意向锁X锁，如果存在间隙锁S锁，就阻塞等待</li>
+<li>加锁成功后执行插入，对插入位置加X锁，仅自己能插入，并执行插入</li>
+<li>如果位置上有别的数据插入的数据，则阻塞等待其他事务提交释放锁</li>
+<li>多个事务可以并发插入同个间隙的不同位置，不互相阻塞</li>
+</ul>
+<ol start="2">
+<li>批量插入
+逐行执行多个单行插入，重复上述过程</li>
+</ol>
+<h3 id="update">
+  update
+  <a class="anchor" href="#update">#</a>
+</h3>
+<ul>
+<li>对where条件匹配的行加X锁
+<ul>
+<li>如果用了唯一索引（索引扫描），对匹配索引值加记录X锁</li>
+<li>如果用了普通索引（索引扫描），对匹配索引值加临键X锁</li>
+<li>如果没有使用索引或者索引失效（全表扫描），对全表加X表锁(所有记录X临键锁)</li>
+</ul>
+</li>
+<li>如果会更新索引字段，旧索引项加X锁</li>
+</ul>
+<h3 id="delete">
+  delete
+  <a class="anchor" href="#delete">#</a>
+</h3>
+<ul>
+<li>对where条件匹配的行加X锁
+<ul>
+<li>如果用了唯一索引（索引扫描），对匹配索引值加记录X锁</li>
+<li>如果用了普通索引（索引扫描），对匹配索引值加临键X锁</li>
+<li>如果没有使用索引或者索引失效（全表扫描），对全表加X表锁(所有记录X临键锁)</li>
+</ul>
+</li>
+</ul>
+<h2 id="可以优化的操作方向">
+  可以优化的操作方向
+  <a class="anchor" href="#%e5%8f%af%e4%bb%a5%e4%bc%98%e5%8c%96%e7%9a%84%e6%93%8d%e4%bd%9c%e6%96%b9%e5%90%91">#</a>
+</h2>
+<h3 id="测试机检查">
+  测试机检查
+  <a class="anchor" href="#%e6%b5%8b%e8%af%95%e6%9c%ba%e6%a3%80%e6%9f%a5">#</a>
+</h3>
+<p>测试SQL执行究竟是加表锁还是行锁等，修改以避免表锁</p>
+<h3 id="慎用显式加锁">
+  慎用显式加锁
+  <a class="anchor" href="#%e6%85%8e%e7%94%a8%e6%98%be%e5%bc%8f%e5%8a%a0%e9%94%81">#</a>
+</h3>
+<p>select &hellip; for update 和 select &hellip; lock in share mode 必须使用索引，并检查加锁情况，避免锁表</p>
+<h3 id="减小加锁范围">
+  减小加锁范围
+  <a class="anchor" href="#%e5%87%8f%e5%b0%8f%e5%8a%a0%e9%94%81%e8%8c%83%e5%9b%b4">#</a>
+</h3>
+<p>每次事务，加锁范围尽量小，以提高并发量，减少并发冲突</p>
+<h3 id="减少持锁时间">
+  减少持锁时间
+  <a class="anchor" href="#%e5%87%8f%e5%b0%91%e6%8c%81%e9%94%81%e6%97%b6%e9%97%b4">#</a>
+</h3>
+<p>锁施放时间为事务提交时，如果数据库操作完毕后续的步骤失败不需要回滚数据，可以先提交事务，避免长事务，减少持锁时间，提升并发</p>
+<h2 id="需要警惕的死锁操作场景">
+  需要警惕的死锁操作场景
+  <a class="anchor" href="#%e9%9c%80%e8%a6%81%e8%ad%a6%e6%83%95%e7%9a%84%e6%ad%bb%e9%94%81%e6%93%8d%e4%bd%9c%e5%9c%ba%e6%99%af">#</a>
+</h2>
+<p>死锁的条件是 并发资源争抢 + 不同的加锁顺序<br>
+在数据库中，并发的是事务，资源是行或者表，锁指的是互斥的锁对（X-S, X-X）<br>
+可以说，只要两个事务同时要操作同一部分数据，并且涉及加锁（加锁读/insert/update/delete），就需要警惕死锁<br>
+一般来说，最常见的是批量的insert/update/delete并发</p>
+<ul>
+<li>insert批量不容易死锁，毕竟是逐行插入，就算两事务并发插入，针对的也是一块空白区域，每一行A先填，B就等，A提交释放锁再执行</li>
+<li>update批量容易死锁，两事务同时update两行数据(同表或不同表)，A事务先更新1再更新2，B事务先更新2再更新1，并发时互相等锁导致死锁
+<ul>
+<li>扩展为两事务并发批量更新两部分数据，但是更新数据行有所重叠，并且更新顺序不同，可能导致死锁</li>
+</ul>
+</li>
+<li>delete批量不容易死锁，删了就删了</li>
+<li>具体场景具体分析，充分考量并发情况下的各种加锁组合判断，并在测试库中测试对应情况是否死锁</li>
+</ul>
+<p>加锁场景众多，仍需实践具体辨析</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/eab6d5632bf0e7b7b35aa1cd5b46a65bf469b1b5" title='Last modified by constructor-md | 2025-05-03' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-03</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#锁分类和特性">锁分类和特性</a>
+      <ul>
+        <li><a href="#行级锁">行级锁</a></li>
+        <li><a href="#插入意向锁x模式间隙锁">插入意向锁（X模式间隙锁）</a></li>
+        <li><a href="#表级锁">表级锁</a></li>
+      </ul>
+    </li>
+    <li><a href="#语句加锁情况枚举可重复读级别">语句加锁情况枚举（可重复读级别）</a>
+      <ul>
+        <li><a href="#普通查询">普通查询</a></li>
+        <li><a href="#select--for-update">SELECT &hellip; FOR UPDATE</a></li>
+        <li><a href="#select--lock-in-share-mode">SELECT &hellip; LOCK IN SHARE MODE</a></li>
+        <li><a href="#insert">insert</a></li>
+        <li><a href="#update">update</a></li>
+        <li><a href="#delete">delete</a></li>
+      </ul>
+    </li>
+    <li><a href="#可以优化的操作方向">可以优化的操作方向</a>
+      <ul>
+        <li><a href="#测试机检查">测试机检查</a></li>
+        <li><a href="#慎用显式加锁">慎用显式加锁</a></li>
+        <li><a href="#减小加锁范围">减小加锁范围</a></li>
+        <li><a href="#减少持锁时间">减少持锁时间</a></li>
+      </ul>
+    </li>
+    <li><a href="#需要警惕的死锁操作场景">需要警惕的死锁操作场景</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

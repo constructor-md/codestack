@@ -1,28 +1,47 @@
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
-<head>
+<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="
-  应用层 Application Layer
+  查询优化与索引失效
+  #
+
+
+  查询优化
+  #
+
+应遵循一定规则，使得查询速度加快、数据库负担降低
+
+避免查询不必要的数据，限制查询字段，不要取出全部列，尤其在多表联合查询时
+联表查询时避免大表联小表
+使用联合索引时遵循最左前缀原则
+避免在代码中循环执行SQL
+避免返回大量结果，要使用分页
+考虑拆分大的复杂联表，改为多个简单查询在代码中复合
+使用缓存，减少数据库重复访问
+
+
+  索引失效情况
   #
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/basic/net/application/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/mysql/query_optimization_and_index_invalidation/">
   <meta property="og:site_name" content="CodeStack">
-  <meta property="og:title" content="应用层">
-  <meta property="og:description" content="应用层 Application Layer#">
+  <meta property="og:title" content="查询优化与索引失效">
+  <meta property="og:description" content="查询优化与索引失效#查询优化#应遵循一定规则，使得查询速度加快、数据库负担降低
+避免查询不必要的数据，限制查询字段，不要取出全部列，尤其在多表联合查询时 联表查询时避免大表联小表 使用联合索引时遵循最左前缀原则 避免在代码中循环执行SQL 避免返回大量结果，要使用分页 考虑拆分大的复杂联表，改为多个简单查询在代码中复合 使用缓存，减少数据库重复访问 索引失效情况#">
   <meta property="og:locale" content="zh_CN">
-  <meta property="og:type" content="website">
-<title>应用层 | CodeStack</title>
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+<title>查询优化与索引失效 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/basic/net/application/">
+<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/mysql/query_optimization_and_index_invalidation/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.3ab0de8624114e793d349e0869c64ee7ba512621f5ccf5244a1da3ac1d51bb52.js" integrity="sha256-OrDehiQRTnk9NJ4IacZO57pRJiH1zPUkSh2jrB1Ru1I=" crossorigin="anonymous"></script>
-<link rel="alternate" type="application/rss+xml" href="https://constructor-md.github.io/codestack/docs/basic/net/application/index.xml" title="CodeStack" />
+  <script defer src="/codestack/en.search.min.a836f16c26d460afd786fcec5920e741e354a74758f8cfd4be2c524b19e6edf9.js" integrity="sha256-qDbxbCbUYK/XhvzsWSDnQeNUp0dY&#43;M/UvixSSxnm7fk=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -131,7 +150,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/basic/net/application/" class="active">应用层</a>
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
   
 
           
@@ -242,7 +261,20 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+    <a href="/codestack/docs/javaee/mysql/query_optimization_and_index_invalidation/" class="active">查询优化与索引失效</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/querysql-execution-order/" class="">查询SQL执行顺序</a>
   
 
         </li>
@@ -459,7 +491,7 @@ https://github.com/alex-shpak/hugo-book
     <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <h3>应用层</h3>
+  <h3>查询优化与索引失效</h3>
 
   <label for="toc-control">
     
@@ -473,7 +505,12 @@ https://github.com/alex-shpak/hugo-book
   <aside class="hidden clearfix">
     
   
-<nav id="TableOfContents"></nav>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#查询优化">查询优化</a></li>
+    <li><a href="#索引失效情况">索引失效情况</a></li>
+  </ul>
+</nav>
 
 
 
@@ -484,10 +521,28 @@ https://github.com/alex-shpak/hugo-book
 
       
       
-  <article class="markdown book-article"><h1 id="应用层-application-layer">
-  应用层 Application Layer
-  <a class="anchor" href="#%e5%ba%94%e7%94%a8%e5%b1%82-application-layer">#</a>
+  <article class="markdown book-article"><h1 id="查询优化与索引失效">
+  查询优化与索引失效
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e4%bc%98%e5%8c%96%e4%b8%8e%e7%b4%a2%e5%bc%95%e5%a4%b1%e6%95%88">#</a>
 </h1>
+<h2 id="查询优化">
+  查询优化
+  <a class="anchor" href="#%e6%9f%a5%e8%af%a2%e4%bc%98%e5%8c%96">#</a>
+</h2>
+<p>应遵循一定规则，使得查询速度加快、数据库负担降低</p>
+<ol>
+<li>避免查询不必要的数据，限制查询字段，不要取出全部列，尤其在多表联合查询时</li>
+<li>联表查询时避免大表联小表</li>
+<li>使用联合索引时遵循最左前缀原则</li>
+<li>避免在代码中循环执行SQL</li>
+<li>避免返回大量结果，要使用分页</li>
+<li>考虑拆分大的复杂联表，改为多个简单查询在代码中复合</li>
+<li>使用缓存，减少数据库重复访问</li>
+</ol>
+<h2 id="索引失效情况">
+  索引失效情况
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e5%a4%b1%e6%95%88%e6%83%85%e5%86%b5">#</a>
+</h2>
 </article>
  
       
@@ -496,12 +551,6 @@ https://github.com/alex-shpak/hugo-book
         
   <div class="flex flex-wrap justify-between">
 
-
-  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/dba06b7aaa2f0bb735af9ac84c8fa8dd57c97e35" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
-      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
-      <span>2025-04-20</span>
-    </a>
-  </div>
 
 
 
@@ -533,7 +582,12 @@ https://github.com/alex-shpak/hugo-book
       <div class="book-toc-content">
         
   
-<nav id="TableOfContents"></nav>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#查询优化">查询优化</a></li>
+    <li><a href="#索引失效情况">索引失效情况</a></li>
+  </ul>
+</nav>
 
 
  
