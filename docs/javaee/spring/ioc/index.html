@@ -1,118 +1,81 @@
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
-<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+<head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="
-  依赖注入（DI）、控制反转（IOC）和自动装配
+  依赖注入|控制反转|自动装配
   #
 
-控制反转基本概念：
-将对象的创建和管理的控制权，从某个实体类，转交给Spring。
-依赖注入基本概念：
-对象间的依赖关系将被自动注入到需要他们的对象中去。
-在传统模式中，类需要哪些资源就要自己去new出来，
-现在则统一由Spring提供，从主动变成了被动。称为控制反转。
-Spring框架控制的资源全部放置在Spring底层的IOC容器中。
 
-控制反转可以理解为一种交给外部管理类依赖资源的设计模式
+  控制反转(IOC)与依赖注入(DI)
+  #
+
+控制反转基本概念：  
+将对象的创建和管理的控制权，从某个实体类，转交给 Spring 容器
+
+在传统模式中，对象需要哪些资源就要在类代码中写明自己去 new 出来
+现在则统一由 Spring 提供，从主动变成了被动。称为控制反转
+依赖注入基本概念：
+对象间的依赖关系，被 Spring 容器自动注入到需要他们的对象中去
+
+也就是由 Spring 容器来管理对象间的依赖关系
 依赖注入是控制反转的一种实现形式
 
-指的是组件自身提供普通的Java方法声明依赖关系。容器全权负责组件依赖关系的装配，将根据这些声明主动将符合依赖关系的对象传递给需要的对象。
-为了实现控制反转的概念，Spring实现了依赖注入的机制
-
-
+指的是组件自身提供普通的 Java 方法声明依赖关系。容器全权负责组件依赖关系的装配，将根据这些声明主动将符合依赖关系的对象设置给需要的对象，实现原理是反射
+为了实现控制反转的概念，Spring 实现了依赖注入的机制
 
 依赖注入机制的使用方式：
 
 属性注入形式
-xml方式：使类有Set方法，并设置bean和property。Spring读取xml文件时，认为需要向bean a注入bean b。这实质上是通过，使类有set方法，从而可实现用xml文件声明属性依赖关系，从而声明依赖关系，寻求注入的方式。
+xml方式：使类有 Set 方法，并设置 bean 和 property 。Spring 读取 xml 文件时，认为需要向 bean a 注入 bean b。这实质上是通过，使类有 set 方法，从而可实现用xml文件声明属性依赖关系，从而声明依赖关系，寻求注入的方式。
 
 
 
 
 构造器注入形式
-xml方式：使类具备有参构造函数，并设置bean和property。实质上与上述是相似的，只是多支持了一种声明的方式。
+xml方式：使类具备有参构造函数，并设置 bean 和 property。实质上与上述是相似的，只是多支持了一种声明的方式。
 
 
 
 Java显式配置
 
-通过注解，描述某个类应该作为Bean被容器管理，且内部包含一些如何在上下文中创建Bean的细节。如@Configuration。
-通过注解，描述某个方法的返回结果应该作为Bean被容器管理，如@Bean。
 
 
-
-上述的依赖注入的使用方式，实际上都是在告诉Spring如何装配对象间的依赖关系。
-Spring对于描述Bean如何进行装配时，提供了三种主要的装配机制：
-
-XML中显式配置描述
-Java中显式配置描述（就是通过@Configuration&#43;@Bean描述Bean的创建）
-隐式的Bean发现机制和自动装配（就是通过@Component&#43;@Autowired等描述自动扫描和注入）
-
-自动装配的Spring实现：
+通过注解，描述某个类应该作为 Bean 被容器管理，且内部包含一些如何在上下文中创建 Bean 的细节。如 @Configuration。
+通过注解，描述某个方法的返回结果应该作为 Bean 被容器管理，如 @Bean。
 
 
-组件扫描：通过注解配置，Spring会自动发现应用上下文中创建的Bean
+  自动装配
+  #
 
-通过@ComponentScan配置组件扫描的包
-通过@Component声明一个类为组件
-Spring将扫描包并找到组件，为这些组件创建Bean并放入容器中
-
-
-
-自动装配：Spring自动满足Bean之间的依赖关系
-
-在构造器上加上@Autowired，则Spring构造对象时，将传入对应的Bean。（注解式的构造器注入）
-在Setter或其他方法上加上@Autowired，则Spring初始化Bean后，会尽量满足Bean的依赖，就会注入指定的Bean。（注解式的属性注入）
-将@Autowired直接加在属性上
-
-
-
-控制反转的优点：
-（理解中，依赖注入和自动装配机制，都是为了让控制反转模式能够合理运行的实现）
-如A需要B实现功能
-按传统模式，则需要在A中new B()，这时当B需要改动时，则A与B有关的功能代码可能都需要改动。
-有了控制反转，将依赖关系交给容器装配，则我们只需改动B，就可以让容器初始化一个不同的B注入到A中，尽量少地避免了上层的改动。
-这其实是依赖倒置原则的实现。实现依赖倒置原则，使得高层建筑可以不关心底层建筑的实现，避免牵一发动全身。
-为了实现依赖倒置原则，思路是做控制反转，方法是实现依赖注入，为了实现依赖注入，做了个IOC容器去管理Bean的生成和装配等。
-降低了组件间的耦合度。
-在Spring项目中的影响逻辑：
-由于依赖倒置原则具有修改底层建筑，尽量少地影响上层建筑地好处。
-Spring为了实现依赖倒置原则，构想了控制反转的模式，即将对象的创建、装配、生命周期管理等，交给IOC容器来进行，相比让对象自己去new，使得组件间耦合度降低
-IOC容器管理Bean，首先是在启动时，通过读取XML、Java注解等方式，理解声明的Bean和装配方式，生成Bean并注册到容器中。进行后续管理。
-组件的耦合度降低页实现了Controller、Service、DAO软件各层之间的解耦
-IOC容器创建Bean提供了单例模式的支持，使得开发人员不需要自己实现
-切面机制受IOC的影响暂定
-组件间的解耦使得Spring使用第三方组件时可以实现无痛的切换底层实现，优势仅需修改一些配置，即可使得实例化地Bean是另一套实现，则被注入地是另一套实现，只需做好底层接口即可。">
+上述的依赖注入的使用方式，实际上都是在告诉 Spring 容器如何装配对象间的依赖关系
+Spring 对于描述 Bean 如何进行装配时，提供了三种主要的装配机制：">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javaee/spring/ioc/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/spring/ioc/">
   <meta property="og:site_name" content="CodeStack">
-  <meta property="og:title" content="依赖注入（DI）、控制反转（IOC）和自动装配">
-  <meta property="og:description" content="依赖注入（DI）、控制反转（IOC）和自动装配#控制反转基本概念： 将对象的创建和管理的控制权，从某个实体类，转交给Spring。
-依赖注入基本概念： 对象间的依赖关系将被自动注入到需要他们的对象中去。
-在传统模式中，类需要哪些资源就要自己去new出来， 现在则统一由Spring提供，从主动变成了被动。称为控制反转。
-Spring框架控制的资源全部放置在Spring底层的IOC容器中。
-控制反转可以理解为一种交给外部管理类依赖资源的设计模式 依赖注入是控制反转的一种实现形式 指的是组件自身提供普通的Java方法声明依赖关系。容器全权负责组件依赖关系的装配，将根据这些声明主动将符合依赖关系的对象传递给需要的对象。 为了实现控制反转的概念，Spring实现了依赖注入的机制 依赖注入机制的使用方式：
-属性注入形式 xml方式：使类有Set方法，并设置bean和property。Spring读取xml文件时，认为需要向bean a注入bean b。这实质上是通过，使类有set方法，从而可实现用xml文件声明属性依赖关系，从而声明依赖关系，寻求注入的方式。 构造器注入形式 xml方式：使类具备有参构造函数，并设置bean和property。实质上与上述是相似的，只是多支持了一种声明的方式。 Java显式配置
-通过注解，描述某个类应该作为Bean被容器管理，且内部包含一些如何在上下文中创建Bean的细节。如@Configuration。 通过注解，描述某个方法的返回结果应该作为Bean被容器管理，如@Bean。 上述的依赖注入的使用方式，实际上都是在告诉Spring如何装配对象间的依赖关系。 Spring对于描述Bean如何进行装配时，提供了三种主要的装配机制：
-XML中显式配置描述 Java中显式配置描述（就是通过@Configuration&#43;@Bean描述Bean的创建） 隐式的Bean发现机制和自动装配（就是通过@Component&#43;@Autowired等描述自动扫描和注入） 自动装配的Spring实现：
-组件扫描：通过注解配置，Spring会自动发现应用上下文中创建的Bean
-通过@ComponentScan配置组件扫描的包 通过@Component声明一个类为组件 Spring将扫描包并找到组件，为这些组件创建Bean并放入容器中 自动装配：Spring自动满足Bean之间的依赖关系
-在构造器上加上@Autowired，则Spring构造对象时，将传入对应的Bean。（注解式的构造器注入） 在Setter或其他方法上加上@Autowired，则Spring初始化Bean后，会尽量满足Bean的依赖，就会注入指定的Bean。（注解式的属性注入） 将@Autowired直接加在属性上 控制反转的优点： （理解中，依赖注入和自动装配机制，都是为了让控制反转模式能够合理运行的实现） 如A需要B实现功能 按传统模式，则需要在A中new B()，这时当B需要改动时，则A与B有关的功能代码可能都需要改动。 有了控制反转，将依赖关系交给容器装配，则我们只需改动B，就可以让容器初始化一个不同的B注入到A中，尽量少地避免了上层的改动。 这其实是依赖倒置原则的实现。实现依赖倒置原则，使得高层建筑可以不关心底层建筑的实现，避免牵一发动全身。 为了实现依赖倒置原则，思路是做控制反转，方法是实现依赖注入，为了实现依赖注入，做了个IOC容器去管理Bean的生成和装配等。 降低了组件间的耦合度。
-在Spring项目中的影响逻辑： 由于依赖倒置原则具有修改底层建筑，尽量少地影响上层建筑地好处。 Spring为了实现依赖倒置原则，构想了控制反转的模式，即将对象的创建、装配、生命周期管理等，交给IOC容器来进行，相比让对象自己去new，使得组件间耦合度降低 IOC容器管理Bean，首先是在启动时，通过读取XML、Java注解等方式，理解声明的Bean和装配方式，生成Bean并注册到容器中。进行后续管理。 组件的耦合度降低页实现了Controller、Service、DAO软件各层之间的解耦 IOC容器创建Bean提供了单例模式的支持，使得开发人员不需要自己实现 切面机制受IOC的影响暂定 组件间的解耦使得Spring使用第三方组件时可以实现无痛的切换底层实现，优势仅需修改一些配置，即可使得实例化地Bean是另一套实现，则被注入地是另一套实现，只需做好底层接口即可。">
+  <meta property="og:title" content="依赖注入|控制反转|自动装配">
+  <meta property="og:description" content="依赖注入|控制反转|自动装配#控制反转(IOC)与依赖注入(DI)#控制反转基本概念： 将对象的创建和管理的控制权，从某个实体类，转交给 Spring 容器
+在传统模式中，对象需要哪些资源就要在类代码中写明自己去 new 出来
+现在则统一由 Spring 提供，从主动变成了被动。称为控制反转
+依赖注入基本概念：
+对象间的依赖关系，被 Spring 容器自动注入到需要他们的对象中去
+也就是由 Spring 容器来管理对象间的依赖关系 依赖注入是控制反转的一种实现形式
+指的是组件自身提供普通的 Java 方法声明依赖关系。容器全权负责组件依赖关系的装配，将根据这些声明主动将符合依赖关系的对象设置给需要的对象，实现原理是反射 为了实现控制反转的概念，Spring 实现了依赖注入的机制 依赖注入机制的使用方式：
+属性注入形式 xml方式：使类有 Set 方法，并设置 bean 和 property 。Spring 读取 xml 文件时，认为需要向 bean a 注入 bean b。这实质上是通过，使类有 set 方法，从而可实现用xml文件声明属性依赖关系，从而声明依赖关系，寻求注入的方式。 构造器注入形式 xml方式：使类具备有参构造函数，并设置 bean 和 property。实质上与上述是相似的，只是多支持了一种声明的方式。 Java显式配置
+通过注解，描述某个类应该作为 Bean 被容器管理，且内部包含一些如何在上下文中创建 Bean 的细节。如 @Configuration。 通过注解，描述某个方法的返回结果应该作为 Bean 被容器管理，如 @Bean。 自动装配#上述的依赖注入的使用方式，实际上都是在告诉 Spring 容器如何装配对象间的依赖关系 Spring 对于描述 Bean 如何进行装配时，提供了三种主要的装配机制：">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
     <meta property="article:modified_time" content="2025-04-18T15:05:51+08:00">
-<title>依赖注入（DI）、控制反转（IOC）和自动装配 | CodeStack</title>
+<title>依赖注入|控制反转|自动装配 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="http://localhost:1313/codestack/docs/javaee/spring/ioc/">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/spring/ioc/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.9cb8a2e1b4ae52f511d584679482caba28fa1bcae8fdde015005b7e3b00fb9b6.js" integrity="sha256-nLii4bSuUvUR1YRnlILKuij6G8ro/d4BUAW347APubY=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.756a16d3702262c48e10d295556d5c2bb07630c35dec8a5690a640223c3bdd59.js" integrity="sha256-dWoW03AiYsSOENKVVW1cK7B2MMNd7IpWkKZAIjw73Vk=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -288,7 +251,33 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/spring/ioc/" class="active">依赖注入（DI）、控制反转（IOC）和自动装配</a>
+    <a href="/codestack/docs/javaee/spring/ioc/" class="active">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
   
 
         </li>
@@ -549,7 +538,7 @@ https://github.com/alex-shpak/hugo-book
     <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <h3>依赖注入（DI）、控制反转（IOC）和自动装配</h3>
+  <h3>依赖注入|控制反转|自动装配</h3>
 
   <label for="toc-control">
     
@@ -563,7 +552,13 @@ https://github.com/alex-shpak/hugo-book
   <aside class="hidden clearfix">
     
   
-<nav id="TableOfContents"></nav>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#控制反转ioc与依赖注入di">控制反转(IOC)与依赖注入(DI)</a></li>
+    <li><a href="#自动装配">自动装配</a></li>
+    <li><a href="#理解">理解</a></li>
+  </ul>
+</nav>
 
 
 
@@ -574,88 +569,105 @@ https://github.com/alex-shpak/hugo-book
 
       
       
-  <article class="markdown book-article"><h1 id="依赖注入di控制反转ioc和自动装配">
-  依赖注入（DI）、控制反转（IOC）和自动装配
-  <a class="anchor" href="#%e4%be%9d%e8%b5%96%e6%b3%a8%e5%85%a5di%e6%8e%a7%e5%88%b6%e5%8f%8d%e8%bd%acioc%e5%92%8c%e8%87%aa%e5%8a%a8%e8%a3%85%e9%85%8d">#</a>
+  <article class="markdown book-article"><h1 id="依赖注入控制反转自动装配">
+  依赖注入|控制反转|自动装配
+  <a class="anchor" href="#%e4%be%9d%e8%b5%96%e6%b3%a8%e5%85%a5%e6%8e%a7%e5%88%b6%e5%8f%8d%e8%bd%ac%e8%87%aa%e5%8a%a8%e8%a3%85%e9%85%8d">#</a>
 </h1>
-<p>控制反转基本概念：
-将对象的创建和管理的控制权，从某个实体类，转交给Spring。</p>
-<p>依赖注入基本概念：
-对象间的依赖关系将被自动注入到需要他们的对象中去。</p>
-<p>在传统模式中，类需要哪些资源就要自己去new出来，
-现在则统一由Spring提供，从主动变成了被动。称为控制反转。</p>
-<p>Spring框架控制的资源全部放置在Spring底层的IOC容器中。</p>
+<h2 id="控制反转ioc与依赖注入di">
+  控制反转(IOC)与依赖注入(DI)
+  <a class="anchor" href="#%e6%8e%a7%e5%88%b6%e5%8f%8d%e8%bd%acioc%e4%b8%8e%e4%be%9d%e8%b5%96%e6%b3%a8%e5%85%a5di">#</a>
+</h2>
+<p>控制反转基本概念：  <br>
+将对象的创建和管理的控制权，从某个实体类，转交给 Spring 容器</p>
+<blockquote>
+<p>在传统模式中，对象需要哪些资源就要在类代码中写明自己去 new 出来<br>
+现在则统一由 Spring 提供，从主动变成了被动。称为控制反转</p></blockquote>
+<p>依赖注入基本概念：<br>
+对象间的依赖关系，被 Spring 容器自动注入到需要他们的对象中去</p>
+<blockquote>
+<p>也就是由 Spring 容器来管理对象间的依赖关系
+依赖注入是控制反转的一种实现形式</p></blockquote>
 <ol>
-<li>控制反转可以理解为一种交给外部管理类依赖资源的设计模式</li>
-<li>依赖注入是控制反转的一种实现形式
-<ol>
-<li>指的是组件自身提供普通的Java方法声明依赖关系。容器全权负责组件依赖关系的装配，将根据这些声明主动将符合依赖关系的对象传递给需要的对象。</li>
-<li>为了实现控制反转的概念，Spring实现了依赖注入的机制</li>
-</ol>
-</li>
+<li>指的是组件自身提供普通的 Java 方法声明依赖关系。容器全权负责组件依赖关系的装配，将根据这些声明主动将符合依赖关系的对象设置给需要的对象，实现原理是反射</li>
+<li>为了实现控制反转的概念，Spring 实现了依赖注入的机制</li>
 </ol>
 <p>依赖注入机制的使用方式：</p>
 <ol>
 <li>属性注入形式
-xml方式：使类有Set方法，并设置bean和property。Spring读取xml文件时，认为需要向bean a注入bean b。这实质上是通过，使类有set方法，从而可实现用xml文件声明属性依赖关系，从而声明依赖关系，寻求注入的方式。</li>
+xml方式：使类有 Set 方法，并设置 bean 和 property 。Spring 读取 xml 文件时，认为需要向 bean a 注入 bean b。这实质上是通过，使类有 set 方法，从而可实现用xml文件声明属性依赖关系，从而声明依赖关系，寻求注入的方式。</li>
 </ol>
 <p><img src="./images/DI-param.png" alt="属性注入" title="属性注入"/></p>
 <ol start="2">
 <li>
 <p>构造器注入形式
-xml方式：使类具备有参构造函数，并设置bean和property。实质上与上述是相似的，只是多支持了一种声明的方式。
+xml方式：使类具备有参构造函数，并设置 bean 和 property。实质上与上述是相似的，只是多支持了一种声明的方式。
 <img src="./images/DI-struct.png" alt="构造器注入" title="构造器注入"/></p>
 </li>
 <li>
 <p>Java显式配置</p>
-<ul>
-<li>通过注解，描述某个类应该作为Bean被容器管理，且内部包含一些如何在上下文中创建Bean的细节。如@Configuration。</li>
-<li>通过注解，描述某个方法的返回结果应该作为Bean被容器管理，如@Bean。</li>
-</ul>
 </li>
 </ol>
-<p>上述的依赖注入的使用方式，实际上都是在告诉Spring如何装配对象间的依赖关系。
-Spring对于描述Bean如何进行装配时，提供了三种主要的装配机制：</p>
+<ul>
+<li>通过注解，描述某个类应该作为 Bean 被容器管理，且内部包含一些如何在上下文中创建 Bean 的细节。如 @Configuration。</li>
+<li>通过注解，描述某个方法的返回结果应该作为 Bean 被容器管理，如 @Bean。</li>
+</ul>
+<h2 id="自动装配">
+  自动装配
+  <a class="anchor" href="#%e8%87%aa%e5%8a%a8%e8%a3%85%e9%85%8d">#</a>
+</h2>
+<p>上述的依赖注入的使用方式，实际上都是在告诉 Spring 容器如何装配对象间的依赖关系
+Spring 对于描述 Bean 如何进行装配时，提供了三种主要的装配机制：</p>
 <ol>
 <li>XML中显式配置描述</li>
-<li>Java中显式配置描述（就是通过@Configuration+@Bean描述Bean的创建）</li>
-<li>隐式的Bean发现机制和自动装配（就是通过@Component+@Autowired等描述自动扫描和注入）</li>
+<li>Java中显式配置描述（就是通过 @Configuration + @Bean 描述 Bean 的创建）</li>
+<li>隐式的 Bean 发现机制和自动装配（就是通过 @Component + @Autowired 等描述自动扫描和注入）</li>
 </ol>
-<p>自动装配的Spring实现：</p>
+<p>自动装配的 Spring 实现：</p>
 <ol>
 <li>
-<p>组件扫描：通过注解配置，Spring会自动发现应用上下文中创建的Bean</p>
+<p>组件扫描：通过注解配置，Spring 会自动发现应用上下文中创建的Bean</p>
 <ol>
-<li>通过@ComponentScan配置组件扫描的包</li>
-<li>通过@Component声明一个类为组件</li>
-<li>Spring将扫描包并找到组件，为这些组件创建Bean并放入容器中</li>
+<li>通过 @ComponentScan 配置组件扫描的包</li>
+<li>通过 @Component 声明一个类为组件</li>
+<li>Spring 将扫描包并找到组件，为这些组件创建 Bean 并放入容器中</li>
 </ol>
 </li>
 <li>
-<p>自动装配：Spring自动满足Bean之间的依赖关系</p>
+<p>自动装配：Spring自 动满足 Bean 之间的依赖关系</p>
 <ol>
-<li>在构造器上加上@Autowired，则Spring构造对象时，将传入对应的Bean。（注解式的构造器注入）</li>
-<li>在Setter或其他方法上加上@Autowired，则Spring初始化Bean后，会尽量满足Bean的依赖，就会注入指定的Bean。（注解式的属性注入）</li>
-<li>将@Autowired直接加在属性上</li>
+<li>在构造器上加上 @Autowired，则 Spring 构造对象时，将传入对应的 Bean。（注解式的构造器注入）</li>
+<li>在Setter或其他方法上加上 @Autowired ，则 Spring 初始化 Bean后，会尽量满足 Bean 的依赖，就会注入指定的 Bean。（注解式的属性注入）</li>
+<li>将 @Autowired 直接加在属性上</li>
 </ol>
 </li>
 </ol>
-<p>控制反转的优点：
-（理解中，依赖注入和自动装配机制，都是为了让控制反转模式能够合理运行的实现）
-如A需要B实现功能
-按传统模式，则需要在A中new B()，这时当B需要改动时，则A与B有关的功能代码可能都需要改动。
-有了控制反转，将依赖关系交给容器装配，则我们只需改动B，就可以让容器初始化一个不同的B注入到A中，尽量少地避免了上层的改动。
-这其实是依赖倒置原则的实现。实现依赖倒置原则，使得高层建筑可以不关心底层建筑的实现，避免牵一发动全身。
-为了实现依赖倒置原则，思路是做控制反转，方法是实现依赖注入，为了实现依赖注入，做了个IOC容器去管理Bean的生成和装配等。
-降低了组件间的耦合度。</p>
-<p>在Spring项目中的影响逻辑：
-由于依赖倒置原则具有修改底层建筑，尽量少地影响上层建筑地好处。
-Spring为了实现依赖倒置原则，构想了控制反转的模式，即将对象的创建、装配、生命周期管理等，交给IOC容器来进行，相比让对象自己去new，使得组件间耦合度降低
-IOC容器管理Bean，首先是在启动时，通过读取XML、Java注解等方式，理解声明的Bean和装配方式，生成Bean并注册到容器中。进行后续管理。
-组件的耦合度降低页实现了Controller、Service、DAO软件各层之间的解耦
-IOC容器创建Bean提供了单例模式的支持，使得开发人员不需要自己实现
-切面机制受IOC的影响暂定
-组件间的解耦使得Spring使用第三方组件时可以实现无痛的切换底层实现，优势仅需修改一些配置，即可使得实例化地Bean是另一套实现，则被注入地是另一套实现，只需做好底层接口即可。</p>
+<h2 id="理解">
+  理解
+  <a class="anchor" href="#%e7%90%86%e8%a7%a3">#</a>
+</h2>
+<p>控制反转的优点：<br>
+（理解中，依赖注入和自动装配机制，都是为了让控制反转模式能够合理运行的实现）<br>
+如A需要B实现功能</p>
+<ul>
+<li>按传统模式，则需要在 A 中 new B()，这时当 B 需要改动时，则 A 与 B 有关的功能代码可能都需要改动</li>
+<li>有了控制反转，将依赖关系交给容器装配，则我们只需改动 B，就可以让容器初始化一个不同的 B 注入到 A 中，尽量少地避免了上层的改动</li>
+</ul>
+<blockquote>
+<ul>
+<li>这其实是依赖倒置原则的实现</li>
+<li>实现依赖倒置原则，使得高层建筑可以不关心底层建筑的实现，避免牵一发动全身</li>
+<li>为了实现依赖倒置原则，思路是做控制反转，方法是实现依赖注入，为了实现依赖注入，做了个IOC容器去管理Bean的生成和装配等</li>
+<li>降低了组件间的耦合度</li>
+</ul></blockquote>
+<p>在Spring项目中的影响逻辑：</p>
+<ul>
+<li>由于依赖倒置原则具有修改底层建筑，尽量少地影响上层建筑地好处</li>
+<li>Spring为了实现依赖倒置原则，构想了控制反转的模式。即将对象的创建、装配、生命周期管理等，交给 IOC 容器来进行，相比让对象自己去 new，使得组件间耦合度降低</li>
+<li>IOC 容器管理 Bean，首先是在启动时，通过读取 XML/ Java 注解等方式，理解声明的 Bean 和装配方式，生成 Bean 并注册到容器中，进行后续管理。</li>
+<li>组件的耦合度降低页实现了 Controller、Service、Dao 软件各层之间的解耦</li>
+<li>IOC 容器创建 Bean 提供了单例模式的支持，使得开发人员不需要自己实现</li>
+<li>组件间的解耦使得 Spring 使用第三方组件时可以实现无痛的切换底层实现，优势仅需修改一些配置，即可使得实例化地 Bean 是另一套实现，则被注入地是另一套实现，只需做好底层接口即可。</li>
+</ul>
 </article>
  
       
@@ -701,7 +713,13 @@ IOC容器创建Bean提供了单例模式的支持，使得开发人员不需要�
       <div class="book-toc-content">
         
   
-<nav id="TableOfContents"></nav>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#控制反转ioc与依赖注入di">控制反转(IOC)与依赖注入(DI)</a></li>
+    <li><a href="#自动装配">自动装配</a></li>
+    <li><a href="#理解">理解</a></li>
+  </ul>
+</nav>
 
 
  
