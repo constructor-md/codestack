@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  Jenkins安装与Web项目部署
+  #
+
+考虑到可移植性、对宿主机的影响最小，方便试错等问题
+采用Docker-Compose运行Jenkins
+自定义jenkins镜像，镜像内安装jdk、maven、node以便安装运行
+如果需要支持多版本的软件环境，则定制多版本的镜像即可
+
+  部署Jenkins单节点
+  #
+
+
+  目录及权限
+  #
+
+sudo mkdir /DATA/jenkins /DATA/jenkins/data
+
+sudo chmod -R 777 /DATA/jenkins/data
+
+  定制Dockerfile
+  #
+
+提前安装Maven及Node 便于Java和前端打包
+运行镜像后尽量减少一些配置
+# 使用最新的 Jenkins LTS 镜像
+FROM jenkins/jenkins:lts
+
+# 切换到 root 用户进行系统级操作
+USER root
+
+# 更新系统软件包列表
+RUN apt-get update &amp;&amp; apt-get install -y \
+    wget \
+    gnupg2 \
+    software-properties-common
+
+# 下载并安装 JDK 8
+RUN wget -O /tmp/openjdk-8.tar.gz https://download.java.net/openjdk/jdk8u41/ri/openjdk-8u41-b04-linux-x64-14_jan_2020.tar.gz
+RUN mkdir -p /usr/lib/jvm
+RUN tar -xzf /tmp/openjdk-8.tar.gz -C /usr/lib/jvm
+RUN rm /tmp/openjdk-8.tar.gz
+
+# 添加 NodeSource 源以安装 Node.js 18
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
+
+# 更新软件包列表
+RUN apt-get update
+
+# 安装 Node.js 18
+RUN apt-get install -y nodejs
+
+# 下载并安装 Maven 3.6.3
+RUN wget https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz -P /tmp
+RUN tar -xzf /tmp/apache-maven-3.6.3-bin.tar.gz -C /opt
+RUN ln -s /opt/apache-maven-3.6.3 /opt/maven
+RUN rm /tmp/apache-maven-3.6.3-bin.tar.gz
+
+# 配置 Maven 国内源
+RUN mkdir -p /usr/share/maven/ref/
+COPY settings.xml /usr/share/maven/ref/settings.xml
+
+# 配置 Node.js 国内源
+RUN npm config set registry https://registry.npmmirror.com
+
+# 配置Maven环境变量
+ENV MAVEN_HOME=/opt/maven
+ENV PATH=$PATH:$MAVEN_HOME/bin
+
+# 切换回 jenkins 用户
+USER jenkins
+放在 /DATA/jenkins目录下">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/deploy/jenkins/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="Jenkins">
+  <meta property="og:description" content="Jenkins安装与Web项目部署#考虑到可移植性、对宿主机的影响最小，方便试错等问题
+采用Docker-Compose运行Jenkins
+自定义jenkins镜像，镜像内安装jdk、maven、node以便安装运行
+如果需要支持多版本的软件环境，则定制多版本的镜像即可
+部署Jenkins单节点#目录及权限#sudo mkdir /DATA/jenkins /DATA/jenkins/datasudo chmod -R 777 /DATA/jenkins/data 定制Dockerfile#提前安装Maven及Node 便于Java和前端打包
+运行镜像后尽量减少一些配置
+# 使用最新的 Jenkins LTS 镜像FROM jenkins/jenkins:lts# 切换到 root 用户进行系统级操作USER root# 更新系统软件包列表RUN apt-get update &amp;&amp; apt-get install -y \wget \gnupg2 \software-properties-common# 下载并安装 JDK 8RUN wget -O /tmp/openjdk-8.tar.gz https://download.java.net/openjdk/jdk8u41/ri/openjdk-8u41-b04-linux-x64-14_jan_2020.tar.gzRUN mkdir -p /usr/lib/jvmRUN tar -xzf /tmp/openjdk-8.tar.gz -C /usr/lib/jvmRUN rm /tmp/openjdk-8.tar.gz# 添加 NodeSource 源以安装 Node.js 18RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -# 更新软件包列表RUN apt-get update# 安装 Node.js 18RUN apt-get install -y nodejs# 下载并安装 Maven 3.6.3RUN wget https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz -P /tmpRUN tar -xzf /tmp/apache-maven-3.6.3-bin.tar.gz -C /optRUN ln -s /opt/apache-maven-3.6.3 /opt/mavenRUN rm /tmp/apache-maven-3.6.3-bin.tar.gz# 配置 Maven 国内源RUN mkdir -p /usr/share/maven/ref/COPY settings.xml /usr/share/maven/ref/settings.xml# 配置 Node.js 国内源RUN npm config set registry https://registry.npmmirror.com# 配置Maven环境变量ENV MAVEN_HOME=/opt/mavenENV PATH=$PATH:$MAVEN_HOME/bin# 切换回 jenkins 用户USER jenkins 放在 /DATA/jenkins目录下">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-25T22:38:35+08:00">
+<title>Jenkins | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/deploy/jenkins/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.798be33d12ef4701f24a67c6f824fb68ed2471c03a25399991bc267a8c72f206.js" integrity="sha256-eYvjPRLvRwHySmfG&#43;CT7aO0kccA6JTmZkbwmeoxy8gY=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="active">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Jenkins</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#部署jenkins单节点">部署Jenkins单节点</a>
+      <ul>
+        <li><a href="#目录及权限">目录及权限</a></li>
+        <li><a href="#定制dockerfile">定制Dockerfile</a></li>
+        <li><a href="#预备-maven-的-settingxml">预备 Maven 的 setting.xml</a></li>
+        <li><a href="#构建镜像">构建镜像</a></li>
+        <li><a href="#docker-composeyml">docker-compose.yml</a></li>
+        <li><a href="#启动jenkins容器">启动Jenkins容器</a></li>
+        <li><a href="#初始化设置">初始化设置</a></li>
+      </ul>
+    </li>
+    <li><a href="#全局配置maven-jdk-git-ssh-node">全局配置（Maven JDK Git SSH Node）</a>
+      <ul>
+        <li><a href="#maven">Maven</a></li>
+        <li><a href="#jdk">JDK</a></li>
+        <li><a href="#ssh">SSH</a></li>
+        <li><a href="#git">Git</a></li>
+      </ul>
+    </li>
+    <li><a href="#java项目打包部署">Java项目打包部署</a>
+      <ul>
+        <li><a href="#项目运行服务器配置">项目运行服务器配置</a></li>
+        <li><a href="#新建maven项目">新建Maven项目</a></li>
+      </ul>
+    </li>
+    <li><a href="#node-前端项目打包">Node 前端项目打包</a>
+      <ul>
+        <li><a href="#项目运行服务器配置-1">项目运行服务器配置</a></li>
+        <li><a href="#项目文件和打包上传">项目文件和打包上传</a></li>
+        <li><a href="#jenkins配置">Jenkins配置</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="jenkins安装与web项目部署">
+  Jenkins安装与Web项目部署
+  <a class="anchor" href="#jenkins%e5%ae%89%e8%a3%85%e4%b8%8eweb%e9%a1%b9%e7%9b%ae%e9%83%a8%e7%bd%b2">#</a>
+</h1>
+<p>考虑到可移植性、对宿主机的影响最小，方便试错等问题<br>
+采用Docker-Compose运行Jenkins<br>
+自定义jenkins镜像，镜像内安装jdk、maven、node以便安装运行<br>
+如果需要支持多版本的软件环境，则定制多版本的镜像即可</p>
+<h2 id="部署jenkins单节点">
+  部署Jenkins单节点
+  <a class="anchor" href="#%e9%83%a8%e7%bd%b2jenkins%e5%8d%95%e8%8a%82%e7%82%b9">#</a>
+</h2>
+<h3 id="目录及权限">
+  目录及权限
+  <a class="anchor" href="#%e7%9b%ae%e5%bd%95%e5%8f%8a%e6%9d%83%e9%99%90">#</a>
+</h3>
+<pre tabindex="0"><code>sudo mkdir /DATA/jenkins /DATA/jenkins/data
+
+sudo chmod -R 777 /DATA/jenkins/data
+</code></pre><h3 id="定制dockerfile">
+  定制Dockerfile
+  <a class="anchor" href="#%e5%ae%9a%e5%88%b6dockerfile">#</a>
+</h3>
+<p>提前安装Maven及Node 便于Java和前端打包<br>
+运行镜像后尽量减少一些配置</p>
+<pre tabindex="0"><code># 使用最新的 Jenkins LTS 镜像
+FROM jenkins/jenkins:lts
+
+# 切换到 root 用户进行系统级操作
+USER root
+
+# 更新系统软件包列表
+RUN apt-get update &amp;&amp; apt-get install -y \
+    wget \
+    gnupg2 \
+    software-properties-common
+
+# 下载并安装 JDK 8
+RUN wget -O /tmp/openjdk-8.tar.gz https://download.java.net/openjdk/jdk8u41/ri/openjdk-8u41-b04-linux-x64-14_jan_2020.tar.gz
+RUN mkdir -p /usr/lib/jvm
+RUN tar -xzf /tmp/openjdk-8.tar.gz -C /usr/lib/jvm
+RUN rm /tmp/openjdk-8.tar.gz
+
+# 添加 NodeSource 源以安装 Node.js 18
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
+
+# 更新软件包列表
+RUN apt-get update
+
+# 安装 Node.js 18
+RUN apt-get install -y nodejs
+
+# 下载并安装 Maven 3.6.3
+RUN wget https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz -P /tmp
+RUN tar -xzf /tmp/apache-maven-3.6.3-bin.tar.gz -C /opt
+RUN ln -s /opt/apache-maven-3.6.3 /opt/maven
+RUN rm /tmp/apache-maven-3.6.3-bin.tar.gz
+
+# 配置 Maven 国内源
+RUN mkdir -p /usr/share/maven/ref/
+COPY settings.xml /usr/share/maven/ref/settings.xml
+
+# 配置 Node.js 国内源
+RUN npm config set registry https://registry.npmmirror.com
+
+# 配置Maven环境变量
+ENV MAVEN_HOME=/opt/maven
+ENV PATH=$PATH:$MAVEN_HOME/bin
+
+# 切换回 jenkins 用户
+USER jenkins
+</code></pre><p>放在 /DATA/jenkins目录下</p>
+<h3 id="预备-maven-的-settingxml">
+  预备 Maven 的 setting.xml
+  <a class="anchor" href="#%e9%a2%84%e5%a4%87-maven-%e7%9a%84-settingxml">#</a>
+</h3>
+<pre tabindex="0"><code>&lt;settings xmlns=&#34;http://maven.apache.org/SETTINGS/1.0.0&#34;
+          xmlns:xsi=&#34;http://www.w3.org/2001/XMLSchema-instance&#34;
+          xsi:schemaLocation=&#34;http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd&#34;&gt;
+    &lt;mirrors&gt;
+	 &lt;mirror&gt;
+      		&lt;id&gt;alimaven&lt;/id&gt;
+      		&lt;mirrorOf&gt;central&lt;/mirrorOf&gt;
+      		&lt;name&gt;aliyun maven&lt;/name&gt;
+      		&lt;url&gt;http://maven.aliyun.com/nexus/content/repositories/central&lt;/url&gt;
+    	&lt;/mirror&gt;
+    &lt;/mirrors&gt;
+&lt;/settings&gt;
+</code></pre><p>放在 /DATA/jenkins目录下</p>
+<h3 id="构建镜像">
+  构建镜像
+  <a class="anchor" href="#%e6%9e%84%e5%bb%ba%e9%95%9c%e5%83%8f">#</a>
+</h3>
+<pre tabindex="0"><code>cd /DATA/jenkins
+sudo docker build -t custom-jenkins:latest .
+</code></pre><p>预备命令</p>
+<pre tabindex="0"><code># 删除镜像
+# 先停止容器
+sudo docker-compose stop jenkins
+# 删除停止状态的容器
+sudo docker rm custom-jenkins
+# 删除镜像
+sudo docker image rm custom-jenkins 
+</code></pre><h3 id="docker-composeyml">
+  docker-compose.yml
+  <a class="anchor" href="#docker-composeyml">#</a>
+</h3>
+<pre tabindex="0"><code>version: &#34;3&#34;
+services:
+  jenkins:
+    image: custom-jenkins:latest
+    container_name: jenkins
+    restart: always
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - /DATA/jenkins/data:/var/jenkins_home
+    ports:
+      - &#34;18080:8080&#34;
+      - &#34;50000:50000&#34;
+</code></pre><h3 id="启动jenkins容器">
+  启动Jenkins容器
+  <a class="anchor" href="#%e5%90%af%e5%8a%a8jenkins%e5%ae%b9%e5%99%a8">#</a>
+</h3>
+<pre tabindex="0"><code>sudo docker-compose up -d jenkins
+</code></pre><h3 id="初始化设置">
+  初始化设置
+  <a class="anchor" href="#%e5%88%9d%e5%a7%8b%e5%8c%96%e8%ae%be%e7%bd%ae">#</a>
+</h3>
+<h4 id="尝试访问jenkins控制台">
+  尝试访问Jenkins控制台
+  <a class="anchor" href="#%e5%b0%9d%e8%af%95%e8%ae%bf%e9%97%aejenkins%e6%8e%a7%e5%88%b6%e5%8f%b0">#</a>
+</h4>
+<p>ip:18080
+<img src="./images/init.png" alt="初始化控制台" title="初始化控制台"/></p>
+<h4 id="获取jenkins初始密码登录">
+  获取Jenkins初始密码登录
+  <a class="anchor" href="#%e8%8e%b7%e5%8f%96jenkins%e5%88%9d%e5%a7%8b%e5%af%86%e7%a0%81%e7%99%bb%e5%bd%95">#</a>
+</h4>
+<pre tabindex="0"><code># 进入docker容器
+sudo docker exec -it jenkins /bin/bash
+
+# 查看初始密码
+cat /var/jenkins_home/secrets/initialAdminPassword
+
+# 或者通过查看 docker 启动日志获取
+sudo docker logs jenkins
+</code></pre><h4 id="登陆后选择安装推荐插件">
+  登陆后选择安装推荐插件
+  <a class="anchor" href="#%e7%99%bb%e9%99%86%e5%90%8e%e9%80%89%e6%8b%a9%e5%ae%89%e8%a3%85%e6%8e%a8%e8%8d%90%e6%8f%92%e4%bb%b6">#</a>
+</h4>
+<p><img src="./images/init-plugins-select.png" alt="init-plugins-select" title="init-plugins-select"/>
+<img src="./images/init-plugins-install.png" alt="init-plugins-install" title="init-plugins-install"/></p>
+<h4 id="创建管理员用户">
+  创建管理员用户
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba%e7%ae%a1%e7%90%86%e5%91%98%e7%94%a8%e6%88%b7">#</a>
+</h4>
+<p><img src="./images/admin-create.png" alt="admin-create" title="admin-create"/></p>
+<h4 id="实例配置">
+  实例配置
+  <a class="anchor" href="#%e5%ae%9e%e4%be%8b%e9%85%8d%e7%bd%ae">#</a>
+</h4>
+<p>保持默认即可
+<img src="./images/instance-config.png" alt="instance-config" title="instance-config"/></p>
+<h4 id="初始化完毕">
+  初始化完毕
+  <a class="anchor" href="#%e5%88%9d%e5%a7%8b%e5%8c%96%e5%ae%8c%e6%af%95">#</a>
+</h4>
+<p><img src="./images/inited.png" alt="inited" title="inited"/>
+点击开始使用
+<img src="./images/welcome.png" alt="welcome" title="welcome"/></p>
+<h2 id="全局配置maven-jdk-git-ssh-node">
+  全局配置（Maven JDK Git SSH Node）
+  <a class="anchor" href="#%e5%85%a8%e5%b1%80%e9%85%8d%e7%bd%aemaven-jdk-git-ssh-node">#</a>
+</h2>
+<h3 id="maven">
+  Maven
+  <a class="anchor" href="#maven">#</a>
+</h3>
+<h4 id="settingsxml-路径设置">
+  settings.xml 路径设置
+  <a class="anchor" href="#settingsxml-%e8%b7%af%e5%be%84%e8%ae%be%e7%bd%ae">#</a>
+</h4>
+<p>以使换源的配置生效
+<img src="./images/maven-setting.png" alt="maven-setting" title="maven-setting"/></p>
+<h4 id="安装maven插件">
+  安装Maven插件
+  <a class="anchor" href="#%e5%ae%89%e8%a3%85maven%e6%8f%92%e4%bb%b6">#</a>
+</h4>
+<p>Maven Integration/Maven Integration plugin<br>
+安装maven集成插件，新建任务才可以新建Maven任务
+<img src="./images/maven-plugins.png" alt="maven-plugins" title="maven-plugins"/>
+<img src="./images/maven-project.png" alt="maven-project" title="maven-project"/></p>
+<h4 id="全局配置">
+  全局配置
+  <a class="anchor" href="#%e5%85%a8%e5%b1%80%e9%85%8d%e7%bd%ae">#</a>
+</h4>
+<p>告知 jenkins maven 环境变量，用于后续命令执行
+<img src="./images/maven-config.png" alt="maven-config" title="maven-config"/></p>
+<h3 id="jdk">
+  JDK
+  <a class="anchor" href="#jdk">#</a>
+</h3>
+<p>不配置，maven 使用 jenkins 的 java 环境进行打包</p>
+<h3 id="ssh">
+  SSH
+  <a class="anchor" href="#ssh">#</a>
+</h3>
+<h4 id="插件安装">
+  插件安装
+  <a class="anchor" href="#%e6%8f%92%e4%bb%b6%e5%ae%89%e8%a3%85">#</a>
+</h4>
+<p>Publish Over SSH
+<img src="./images/ssh-plugins-install.png" alt="ssh-plugins-install" title="ssh-plugins-install"/>
+这里显示的是安装后的状态，直接在avaliable plugins中搜索安装即可</p>
+<h4 id="全局配置-1">
+  全局配置
+  <a class="anchor" href="#%e5%85%a8%e5%b1%80%e9%85%8d%e7%bd%ae-1">#</a>
+</h4>
+<p><img src="./images/ssh-config1.png" alt="ssh-config1" title="ssh-config1"/>
+<img src="./images/ssh-config2.png" alt="ssh-config2" title="ssh-config2"/></p>
+<h3 id="git">
+  Git
+  <a class="anchor" href="#git">#</a>
+</h3>
+<p>相关插件已经在初始化时安装，现在仅需要配置</p>
+<h4 id="jenkins-添加-github-的主机密钥">
+  Jenkins 添加 GitHub 的主机密钥
+  <a class="anchor" href="#jenkins-%e6%b7%bb%e5%8a%a0-github-%e7%9a%84%e4%b8%bb%e6%9c%ba%e5%af%86%e9%92%a5">#</a>
+</h4>
+<p>将 GitHub 的主机密钥添加到 SSH 客户端的 known_hosts 文件中</p>
+<pre tabindex="0"><code># 进入 docker 执行
+sudo docker exec -it jenkins /bin/bash
+
+ssh-keyscan -t ed25519 github.com &gt;&gt; ~/.ssh/known_hosts
+</code></pre><p>不执行这一步会报错：</p>
+<pre tabindex="0"><code>stderr: No ED25519 host key is known for github.com and you have requested strict checking.
+Host key verification failed.
+fatal: Could not read from remote repository.
+</code></pre><h4 id="github-添加-jenkins-密钥">
+  Github 添加 Jenkins 密钥
+  <a class="anchor" href="#github-%e6%b7%bb%e5%8a%a0-jenkins-%e5%af%86%e9%92%a5">#</a>
+</h4>
+<p>jenkins 数据目录已经挂载出来，可以直接在宿主机上查看密钥</p>
+<pre tabindex="0"><code>cat /DATA/jenkins/data/.ssh/id_rsa.pub
+</code></pre><p>将密钥设置到项目所在的github账户中
+<img src="./images/github-key.png" alt="github-key" title="github-key"/></p>
+<h4 id="全局配置-2">
+  全局配置
+  <a class="anchor" href="#%e5%85%a8%e5%b1%80%e9%85%8d%e7%bd%ae-2">#</a>
+</h4>
+<p><img src="./images/github-config.jpg" alt="github-config" title="github-config"/></p>
+<h2 id="java项目打包部署">
+  Java项目打包部署
+  <a class="anchor" href="#java%e9%a1%b9%e7%9b%ae%e6%89%93%e5%8c%85%e9%83%a8%e7%bd%b2">#</a>
+</h2>
+<h3 id="项目运行服务器配置">
+  项目运行服务器配置
+  <a class="anchor" href="#%e9%a1%b9%e7%9b%ae%e8%bf%90%e8%a1%8c%e6%9c%8d%e5%8a%a1%e5%99%a8%e9%85%8d%e7%bd%ae">#</a>
+</h3>
+<p>目标是让jenkins打jar包，发送到指定目录，并执行docker-compose up -d name，即可启动项目<br>
+所以目标运行服务器必须配置好项目运行的信息</p>
+<h4 id="登录用户组修改">
+  登录用户组修改
+  <a class="anchor" href="#%e7%99%bb%e5%bd%95%e7%94%a8%e6%88%b7%e7%bb%84%e4%bf%ae%e6%94%b9">#</a>
+</h4>
+<p>让Jenkins配置的SSH登录用户能使用docker-compose命令（将当前用户加入docker用户组）<br>
+使用jenkins配置的SSH登录用户登录服务后执行</p>
+<pre tabindex="0"><code>sudo usermod -aG docker $USER
+# 重新登陆刷新用户组
+su - $USER
+</code></pre><h4 id="目录创建">
+  目录创建
+  <a class="anchor" href="#%e7%9b%ae%e5%bd%95%e5%88%9b%e5%bb%ba">#</a>
+</h4>
+<pre tabindex="0"><code>sudo mkdir /DATA/java/kuibu-service
+</code></pre><p>先将application.yaml配置文件复制到该目录<br>
+后续jar包也会在该目录</p>
+<h4 id="docker-composeyml-1">
+  docker-compose.yml
+  <a class="anchor" href="#docker-composeyml-1">#</a>
+</h4>
+<pre tabindex="0"><code>kuibu-service:
+    image: openjdk:8-jdk-alpine
+    container_name: kuibu-service
+    restart: always
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - /DATA/java/kuibu:/app
+      - /etc/localtime:/etc/localtime
+    ports:
+      - &#34;8123:8123&#34;
+    command: &#34;java -jar /app/app.jar -Xms256M -Xmx256M -Xmn128M -Xloggc:/app/logs/kuibu-service-gc-%t.log -XX:MetaspaceSize=128M -XX:MaxMetaspaceSize=128M -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/kuibu-service-oom-dump.hprof -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintGCCause -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 --spring.config.location=/app/application.yaml &#34;
+</code></pre><p>容器启动命令指定了jar包位置和配置文件位置，使用jar外面的配置文件</p>
+<h4 id="测试">
+  测试
+  <a class="anchor" href="#%e6%b5%8b%e8%af%95">#</a>
+</h4>
+<p>可以自行打包上传jar包，改名为app.jar启动docker-compose测试</p>
+<h3 id="新建maven项目">
+  新建Maven项目
+  <a class="anchor" href="#%e6%96%b0%e5%bb%bamaven%e9%a1%b9%e7%9b%ae">#</a>
+</h3>
+<p><img src="./images/new-project.png" alt="new-project" title="new-project"/>
+<img src="./images/new-maven-project.png" alt="new-maven-project" title="new-maven-project"/></p>
+<h4 id="代码拉取配置">
+  代码拉取配置
+  <a class="anchor" href="#%e4%bb%a3%e7%a0%81%e6%8b%89%e5%8f%96%e9%85%8d%e7%bd%ae">#</a>
+</h4>
+<p>前面Git配置好了两边的信息，这里才能好拉代码
+<img src="./images/code-pull-config1.png" alt="code-pull-config1" title="code-pull-config1"/>
+<img src="./images/code-pull-config2.png" alt="code-pull-config2" title="code-pull-config2"/>
+<img src="./images/code-pull-config3.png" alt="code-pull-config3" title="code-pull-config3"/>
+<img src="./images/code-pull-config4.png" alt="code-pull-config4" title="code-pull-config4"/></p>
+<h4 id="构建后分发和启动包">
+  构建后分发和启动包
+  <a class="anchor" href="#%e6%9e%84%e5%bb%ba%e5%90%8e%e5%88%86%e5%8f%91%e5%92%8c%e5%90%af%e5%8a%a8%e5%8c%85">#</a>
+</h4>
+<p><img src="./images/build-after1.png" alt="build-after1" title="build-after1"/>
+<img src="./images/build-after2.jpg" alt="build-after2" title="build-after2"/>
+<img src="./images/build-after3.png" alt="build-after3" title="build-after3"/></p>
+<h4 id="成功启动">
+  成功启动
+  <a class="anchor" href="#%e6%88%90%e5%8a%9f%e5%90%af%e5%8a%a8">#</a>
+</h4>
+<p><img src="./images/start1.png" alt="start1" title="start1"/>
+<img src="./images/start2.png" alt="start2" title="start2"/>
+<img src="./images/start3.png" alt="start3" title="start3"/></p>
+<h2 id="node-前端项目打包">
+  Node 前端项目打包
+  <a class="anchor" href="#node-%e5%89%8d%e7%ab%af%e9%a1%b9%e7%9b%ae%e6%89%93%e5%8c%85">#</a>
+</h2>
+<h3 id="项目运行服务器配置-1">
+  项目运行服务器配置
+  <a class="anchor" href="#%e9%a1%b9%e7%9b%ae%e8%bf%90%e8%a1%8c%e6%9c%8d%e5%8a%a1%e5%99%a8%e9%85%8d%e7%bd%ae-1">#</a>
+</h3>
+<p>主要是配置nginx转发到dist，jenkins到时打包项目文件发送到服务器指定文件夹即可</p>
+<h3 id="项目文件和打包上传">
+  项目文件和打包上传
+  <a class="anchor" href="#%e9%a1%b9%e7%9b%ae%e6%96%87%e4%bb%b6%e5%92%8c%e6%89%93%e5%8c%85%e4%b8%8a%e4%bc%a0">#</a>
+</h3>
+<h4 id="创建项目文件夹">
+  创建项目文件夹
+  <a class="anchor" href="#%e5%88%9b%e5%bb%ba%e9%a1%b9%e7%9b%ae%e6%96%87%e4%bb%b6%e5%a4%b9">#</a>
+</h4>
+<p>我的 nginx 是 docker-compose 部署的，nginx 的 /usr/share/nginx/html 目录挂载到宿主机的 /DATA/web 目录下<br>
+将项目dist放到该目录下处理</p>
+<pre tabindex="0"><code>sudo mkdir /DATA/web/knowledge-chain
+</code></pre><h4 id="打包上传">
+  打包上传
+  <a class="anchor" href="#%e6%89%93%e5%8c%85%e4%b8%8a%e4%bc%a0">#</a>
+</h4>
+<pre tabindex="0"><code># 项目内有 .env.production 文件
+# &#34;build:prod&#34;: &#34;vite build --mode production&#34;,
+# 打包指定 --mode 参数，vite会自动加载根目录下对应的.env.[mode]文件
+# 文件中以VITE_开头的变量会被注入到import.meta.env对象中，可以用于打包不同环境的后端访问路径等
+# 打包命令
+npm run build:prod
+# 将打包的dist文件夹压缩成zip，上传到服务器指定目录
+</code></pre><h4 id="nginx配置">
+  nginx配置
+  <a class="anchor" href="#nginx%e9%85%8d%e7%bd%ae">#</a>
+</h4>
+<pre tabindex="0"><code>sudo vim /DATA/nginx/conf/nginx.conf
+
+server {
+    listen [::]:8222 ssl;
+    http2 on;
+    server_name thinking-structure.top;
+    ssl_certificate /etc/nginx/certs/thinking-structure.top_bundle.crt;
+    ssl_certificate_key /etc/nginx/certs/thinking-structure.top.key;
+
+    location / {
+        root   /usr/share/nginx/html/knowledge-chain/dist/;
+        index  index.html index.htm;
+        try_files $uri $uri/ /index.html; # 处理单页应用的路由问题
+    }
+}
+</code></pre><h4 id="打开防火墙">
+  打开防火墙
+  <a class="anchor" href="#%e6%89%93%e5%bc%80%e9%98%b2%e7%81%ab%e5%a2%99">#</a>
+</h4>
+<pre tabindex="0"><code>ufw allow 8222/tcp
+</code></pre><h3 id="jenkins配置">
+  Jenkins配置
+  <a class="anchor" href="#jenkins%e9%85%8d%e7%bd%ae">#</a>
+</h3>
+<h4 id="新建自由风格项目">
+  新建自由风格项目
+  <a class="anchor" href="#%e6%96%b0%e5%bb%ba%e8%87%aa%e7%94%b1%e9%a3%8e%e6%a0%bc%e9%a1%b9%e7%9b%ae">#</a>
+</h4>
+<p><img src="./images/node-project.png" alt="node-project" title="node-project"/></p>
+<h4 id="配置代码拉取">
+  配置代码拉取
+  <a class="anchor" href="#%e9%85%8d%e7%bd%ae%e4%bb%a3%e7%a0%81%e6%8b%89%e5%8f%96">#</a>
+</h4>
+<p><img src="./images/node-pull1.png" alt="node-pull1" title="node-pull1"/>
+<img src="./images/node-pull2.png" alt="node-pull2" title="node-pull2"/></p>
+<h4 id="配置打包命令">
+  配置打包命令
+  <a class="anchor" href="#%e9%85%8d%e7%bd%ae%e6%89%93%e5%8c%85%e5%91%bd%e4%bb%a4">#</a>
+</h4>
+<p><img src="./images/node-build.png" alt="node-build" title="node-build"/></p>
+<h4 id="将所有打包结果传输到指定服务器目录即可">
+  将所有打包结果传输到指定服务器目录即可
+  <a class="anchor" href="#%e5%b0%86%e6%89%80%e6%9c%89%e6%89%93%e5%8c%85%e7%bb%93%e6%9e%9c%e4%bc%a0%e8%be%93%e5%88%b0%e6%8c%87%e5%ae%9a%e6%9c%8d%e5%8a%a1%e5%99%a8%e7%9b%ae%e5%bd%95%e5%8d%b3%e5%8f%af">#</a>
+</h4>
+<p><img src="./images/node-build-transfer.png" alt="node-build-transfer" title="node-build-transfer"/></p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/e95c4ae11aa74c26438d1b6ea9f3dda90c10f64b" title='Last modified by constructor-md | 2025-05-25' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-25</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#部署jenkins单节点">部署Jenkins单节点</a>
+      <ul>
+        <li><a href="#目录及权限">目录及权限</a></li>
+        <li><a href="#定制dockerfile">定制Dockerfile</a></li>
+        <li><a href="#预备-maven-的-settingxml">预备 Maven 的 setting.xml</a></li>
+        <li><a href="#构建镜像">构建镜像</a></li>
+        <li><a href="#docker-composeyml">docker-compose.yml</a></li>
+        <li><a href="#启动jenkins容器">启动Jenkins容器</a></li>
+        <li><a href="#初始化设置">初始化设置</a></li>
+      </ul>
+    </li>
+    <li><a href="#全局配置maven-jdk-git-ssh-node">全局配置（Maven JDK Git SSH Node）</a>
+      <ul>
+        <li><a href="#maven">Maven</a></li>
+        <li><a href="#jdk">JDK</a></li>
+        <li><a href="#ssh">SSH</a></li>
+        <li><a href="#git">Git</a></li>
+      </ul>
+    </li>
+    <li><a href="#java项目打包部署">Java项目打包部署</a>
+      <ul>
+        <li><a href="#项目运行服务器配置">项目运行服务器配置</a></li>
+        <li><a href="#新建maven项目">新建Maven项目</a></li>
+      </ul>
+    </li>
+    <li><a href="#node-前端项目打包">Node 前端项目打包</a>
+      <ul>
+        <li><a href="#项目运行服务器配置-1">项目运行服务器配置</a></li>
+        <li><a href="#项目文件和打包上传">项目文件和打包上传</a></li>
+        <li><a href="#jenkins配置">Jenkins配置</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -42,7 +42,7 @@ services:
       restart: always
       environment:
         - &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用
-        - &#34;ELASTIC_PASSWORD=bucunzaide2333&#34;
+        - &#34;ELASTIC_PASSWORD=********&#34;
         - &#34;TZ=Asia/Shanghai&#34;
       ports:
         - &#34;19200:19200&#34;
@@ -82,18 +82,18 @@ volumes:
   <meta property="og:description" content="ElasticSearch#安装版本：8.15.0
 部署方式：三节点
 运行方式：docker-compose
-Linux系统设置## 修改内核参数# 设置每个进程最多拥有的最大内存映射区域数量 默认65536对ES来说不足echo &#34;vm.max_map_count=262144&#34; | sudo tee -a /etc/sysctl.confsudo sysctl -p 创建目录#sudo mkdir /DATA/es /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config 权限设置#sudo chmod -R 777 /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config 各单节点启动获取官方配置#sudo vim /DATA/docker-compose.ymlversion: &#39;3&#39;services:es:image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0container_name: esrestart: alwaysenvironment:- &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用- &#34;ELASTIC_PASSWORD=bucunzaide2333&#34;- &#34;TZ=Asia/Shanghai&#34;ports:- &#34;19200:19200&#34;- &#34;19300:19300&#34;volumes:- /DATA/es/data:/usr/share/elasticsearch/data- /DATA/es/logs:/usr/share/elasticsearch/logs- /etc/hosts:/etc/hosts- es_config:/usr/share/elasticsearch/config- /DATA/es/plugins:/usr/share/elasticsearch/pluginsulimits:# mmap 映射内存不限制memlock:soft: -1 hard: -1# 文件描述符打开个数修改 nofile: soft: 65535 hard: 65535# 末尾添加 作用是不要让宿主机空目录覆盖volumes:es_config:driver: localdriver_opts:type: nonedevice: /DATA/es/configo: bind #mmap 映射内存不限制">
+Linux系统设置## 修改内核参数# 设置每个进程最多拥有的最大内存映射区域数量 默认65536对ES来说不足echo &#34;vm.max_map_count=262144&#34; | sudo tee -a /etc/sysctl.confsudo sysctl -p 创建目录#sudo mkdir /DATA/es /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config 权限设置#sudo chmod -R 777 /DATA/es/data /DATA/es/logs /DATA/es/plugins /DATA/es/config 各单节点启动获取官方配置#sudo vim /DATA/docker-compose.ymlversion: &#39;3&#39;services:es:image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0container_name: esrestart: alwaysenvironment:- &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用- &#34;ELASTIC_PASSWORD=********&#34;- &#34;TZ=Asia/Shanghai&#34;ports:- &#34;19200:19200&#34;- &#34;19300:19300&#34;volumes:- /DATA/es/data:/usr/share/elasticsearch/data- /DATA/es/logs:/usr/share/elasticsearch/logs- /etc/hosts:/etc/hosts- es_config:/usr/share/elasticsearch/config- /DATA/es/plugins:/usr/share/elasticsearch/pluginsulimits:# mmap 映射内存不限制memlock:soft: -1 hard: -1# 文件描述符打开个数修改 nofile: soft: 65535 hard: 65535# 末尾添加 作用是不要让宿主机空目录覆盖volumes:es_config:driver: localdriver_opts:type: nonedevice: /DATA/es/configo: bind #mmap 映射内存不限制">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
-    <meta property="article:modified_time" content="2025-04-20T18:31:30+08:00">
+    <meta property="article:modified_time" content="2025-05-25T22:38:35+08:00">
 <title>ElasticSearch | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
 <link rel="canonical" href="https://constructor-md.github.io/codestack/docs/deploy/elasticsearch/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.0a3e9fa9d1dc24283183df34a17b0ab51a17e13fb6e7384ca0a9837ec234085c.js" integrity="sha256-Cj6fqdHcJCgxg980oXsKtRoX4T&#43;25zhMoKmDfsI0CFw=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.798be33d12ef4701f24a67c6f824fb68ed2471c03a25399991bc267a8c72f206.js" integrity="sha256-eYvjPRLvRwHySmfG&#43;CT7aO0kccA6JTmZkbwmeoxy8gY=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -687,6 +687,19 @@ https://github.com/alex-shpak/hugo-book
         </li>
       
     
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
   </ul>
 
         </li>
@@ -764,6 +777,17 @@ https://github.com/alex-shpak/hugo-book
         <li><a href="#测试ik分词器">测试IK分词器</a></li>
       </ul>
     </li>
+    <li><a href="#efk-收集和查看多节点日志">EFK 收集和查看多节点日志</a>
+      <ul>
+        <li><a href="#目录配置">目录配置</a></li>
+        <li><a href="#filebeatyml">filebeat.yml</a></li>
+        <li><a href="#docker-composeyml">docker-compose.yml</a></li>
+        <li><a href="#启动">启动</a></li>
+        <li><a href="#查看-kibana">查看 Kibana</a></li>
+        <li><a href="#在kibana创建数据视图查看数据">在Kibana创建数据视图查看数据</a></li>
+        <li><a href="#在kibana设置索引自动删除">在Kibana设置索引自动删除</a></li>
+      </ul>
+    </li>
   </ul>
 </nav>
 
@@ -815,7 +839,7 @@ services:
       restart: always
       environment:
         - &#34;ES_JAVA_OPTS=-Xms4g -Xmx4g&#34; # 宿主机最大内存的一半 再留点给其他应用
-        - &#34;ELASTIC_PASSWORD=bucunzaide2333&#34;
+        - &#34;ELASTIC_PASSWORD=********&#34;
         - &#34;TZ=Asia/Shanghai&#34;
       ports:
         - &#34;19200:19200&#34;
@@ -859,7 +883,7 @@ volumes:
 sudo docker-compose up -d es
 
 # 验证节点状态
-curl --cacert /DATA/es/config/certs/http_ca.crt -u elastic:bucunzaide2333 https://localhost:19200/_cluster/health?pretty
+curl --cacert /DATA/es/config/certs/http_ca.crt -u elastic:****** https://localhost:19200/_cluster/health?pretty
 </code></pre><h2 id="生成和复制节点间传输层证书">
   生成和复制节点间传输层证书
   <a class="anchor" href="#%e7%94%9f%e6%88%90%e5%92%8c%e5%a4%8d%e5%88%b6%e8%8a%82%e7%82%b9%e9%97%b4%e4%bc%a0%e8%be%93%e5%b1%82%e8%af%81%e4%b9%a6">#</a>
@@ -903,7 +927,7 @@ exit
 
 # https证书保持各节点自己的 各类客户端访问不使用https
 # 检查https是否可以访问 curl访问-k跳过证书验证 浏览器https高级继续 （不认自签名证书）
-curl -k --cacert /DATA/es/config/certs/http_ca.crt -u elastic:bucunzaide2333 https://localhost:19200/_cluster/health?pretty
+curl -k --cacert /DATA/es/config/certs/http_ca.crt -u elastic:********** https://localhost:19200/_cluster/health?pretty
 </code></pre><h2 id="修改各节点-elasticsearchyml-文件">
   修改各节点 elasticsearch.yml 文件
   <a class="anchor" href="#%e4%bf%ae%e6%94%b9%e5%90%84%e8%8a%82%e7%82%b9-elasticsearchyml-%e6%96%87%e4%bb%b6">#</a>
@@ -976,7 +1000,7 @@ sudo docker-compose up -d es
 <pre tabindex="0"><code>sudo docker-compose up -d es
 
 # 验证节点状态
-curl -u elastic:bucunzaide2333 http://localhost:19200/_cluster/health?pretty
+curl -u elastic:******** http://localhost:19200/_cluster/health?pretty
 {
   &#34;cluster_name&#34; : &#34;docker-cluster&#34;,
   #  green  ：所有主分片和副本分片都已分配，集群状态良好。
@@ -1000,7 +1024,7 @@ curl -u elastic:bucunzaide2333 http://localhost:19200/_cluster/health?pretty
   &#34;task_max_waiting_in_queue_millis&#34; : 0,
   &#34;active_shards_percent_as_number&#34; : 100.0
 }
-curl -u elastic:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
+curl -u elastic:********** http://localhost:19200/_cat/nodes?pretty
 192.168.1.13 13 71 2 0.07 0.31 0.22 cdfhilmrstw - es-node3
 192.168.1.12 14 71 2 0.24 0.38 0.26 cdfhilmrstw - es-node2
 192.168.1.11 18 53 2 0.07 0.30 0.22 cdfhilmrstw * es-node1
@@ -1013,7 +1037,7 @@ curl -u elastic:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
 ./bin/elasticsearch-reset-password -i -u kibana_system
 
 # 多节点验证是否可以登录
-curl -u kibana_system:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
+curl -u kibana_system:********** http://localhost:19200/_cat/nodes?pretty
 </code></pre><blockquote>
 <p>用户和密码单独索引在security
 数据目录挂载出来的情况下可以在docker重启后沿用</p></blockquote>
@@ -1069,8 +1093,8 @@ server.port: 15601
 server.shutdownTimeout: &#34;5s&#34;
 elasticsearch.hosts: [ &#34;http://dataserver1:19200&#34; ]
 elasticsearch.username: &#34;kibana_system&#34;
-elasticsearch.password: &#34;bucunzaide2333&#34;
-i18n.locale: &#34;en&#34;
+elasticsearch.password: &#34;******&#34;
+i18n.locale: &#34;zh-CN&#34;
 monitoring.ui.container.elasticsearch.enabled: true
 
 
@@ -1218,7 +1242,151 @@ POST /_analyze
     }
   ]
 }
-</code></pre></article>
+</code></pre><h2 id="efk-收集和查看多节点日志">
+  EFK 收集和查看多节点日志
+  <a class="anchor" href="#efk-%e6%94%b6%e9%9b%86%e5%92%8c%e6%9f%a5%e7%9c%8b%e5%a4%9a%e8%8a%82%e7%82%b9%e6%97%a5%e5%bf%97">#</a>
+</h2>
+<h3 id="目录配置">
+  目录配置
+  <a class="anchor" href="#%e7%9b%ae%e5%bd%95%e9%85%8d%e7%bd%ae">#</a>
+</h3>
+<pre tabindex="0"><code>mkdir /DATA/filebeat /DATA/filebeat/data
+</code></pre><h3 id="filebeatyml">
+  filebeat.yml
+  <a class="anchor" href="#filebeatyml">#</a>
+</h3>
+<pre tabindex="0"><code>sudo vim /DATA/filebeat/filebeat.yml
+</code></pre><pre tabindex="0"><code>filebeat.inputs:                        #数据输入相关配置
+  - type: filestream            # (必填)数据输入类型是filestream
+    enabled: true
+    paths:
+      - &#34;/var/log/services/kuibu/info.log&#34;
+    fields:
+      server_ip: 192.168.1.23
+    fields_under_root: true
+    tags: [&#34;kuibu&#34;]
+    parsers:
+      - multiline:      # 多行合并
+          type: pattern
+          pattern: &#39;^\[&#39;  # 匹配模式。每一行日志是以 &#34;[&#34;开头。
+          negate: true
+          match: after
+  - type: filestream            # (必填)数据输入类型是filestream
+    enabled: true
+    paths:
+      - &#34;/var/log/services/knowledge-chain/info.log&#34;
+    fields:
+      server_ip: 192.168.1.23
+    fields_under_root: true
+    tags: [&#34;knowledge-chain&#34;]
+    parsers:
+      - multiline:      # 多行合并
+          type: pattern
+          pattern: &#39;^\[&#39;  # 匹配模式。每一行日志是以 &#34;[&#34;开头。
+          negate: true
+          match: after
+  - type: filestream            # (必填)数据输入类型是filestream
+    enabled: true
+    paths:
+      - &#34;/var/log/services/linda/info.log&#34;
+    fields:
+      server_ip: 192.168.1.23
+    fields_under_root: true
+    tags: [&#34;linda-brain&#34;]
+    parsers:
+      - multiline:      # 多行合并
+          type: pattern
+          pattern: &#39;^\[&#39;  # 匹配模式。每一行日志是以 &#34;[&#34;开头。
+          negate: true
+          match: after
+output.elasticsearch:
+  enabled: true
+  hosts: [&#34;192.168.1.11:19200&#34;, &#34;192.168.1.12:19200&#34;, &#34;192.168.1.13:19200&#34;]
+  username: &#34;elastic&#34;
+  password: &#34;************&#34;
+  indices:
+    - index: &#34;java-log-kuibu-service-%{+yyyy.MM.dd}&#34; 
+      when.contains:
+        tags: &#34;kuibu&#34;
+    - index: &#34;java-log-knowledge-chain-service-%{+yyyy.MM.dd}&#34; 
+      when.contains:
+        tags: &#34;knowledge-chain&#34;
+    - index: &#34;java-log-linda-brain-%{+yyyy.MM.dd}&#34;
+      when.contains:
+        tags: &#34;linda-brain&#34;
+
+#必须把ilm索引生命周期管理关掉(否则上面的indecis索引条件、以及下面的setup.template.pattern将会生效)
+setup.ilm.enabled: false
+#默认索引名称是filebeat，如果想上面自定义索引上面，需要设置 模板name和匹配。pattern必须能匹配 上面设置的索引名称
+setup.template.name: &#34;java-log-template&#34;
+setup.template.pattern: &#34;java-log-*&#34;
+setup.template.overwrite: false
+setup.template.settings:
+  index.number_of_shards: 3             # 索引在ES的分片数
+  index.number_of_replicas: 1   # 每个索引的分片在ES的副本数
+</code></pre><h3 id="docker-composeyml">
+  docker-compose.yml
+  <a class="anchor" href="#docker-composeyml">#</a>
+</h3>
+<p>部署在每一个需要读取日志的服务<br>
+负责读取日志，并存储到ES</p>
+<pre tabindex="0"><code>sudo vim /DATA/docker-compose.yml
+</code></pre><pre tabindex="0"><code>version: &#39;3.8&#39;
+
+services:
+  filebeat:
+    image: docker.io/elastic/filebeat:8.7.0
+    container_name: filebeat
+    user: root
+    restart: always
+    environment:
+      - TZ: Asia/Shanghai
+    volumes:
+      - /DATA/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /DATA/java/kuibu/logs:/var/log/services/kuibu/:ro
+      - /DATA/java/knowledge-chain/logs:/var/log/services/knowledge-chain/:ro
+      - /DATA/filebeat/data:/usr/share/filebeat/data
+      - /etc/localtime:/etc/localtime
+    command: [&#34;filebeat&#34;, &#34;-e&#34;, &#34;-strict.perms=false&#34;]
+</code></pre><h3 id="启动">
+  启动
+  <a class="anchor" href="#%e5%90%af%e5%8a%a8">#</a>
+</h3>
+<pre tabindex="0"><code>sudo docker-compose up -d filebeat
+</code></pre><h3 id="查看-kibana">
+  查看 Kibana
+  <a class="anchor" href="#%e6%9f%a5%e7%9c%8b-kibana">#</a>
+</h3>
+<p>数据流索引创建成功
+<img src="./images/data-stream-index-created.png" alt="数据流索引创建成功" title="数据流索引创建成功"/></p>
+<h3 id="在kibana创建数据视图查看数据">
+  在Kibana创建数据视图查看数据
+  <a class="anchor" href="#%e5%9c%a8kibana%e5%88%9b%e5%bb%ba%e6%95%b0%e6%8d%ae%e8%a7%86%e5%9b%be%e6%9f%a5%e7%9c%8b%e6%95%b0%e6%8d%ae">#</a>
+</h3>
+<p><img src="./images/data-view.png" alt="数据视图" title="数据视图"/>
+<img src="./images/data-view-create.png" alt="数据视图创建" title="数据视图创建"/>
+在Discover内查看数据视图
+<img src="./images/discover.png" alt="Discover" title="Discover"/>
+选定数据视图，找到对应字段，即可看到收集到的日志，并进行筛选
+<img src="./images/log-filter.png" alt="log-filter" title="log-filter"/></p>
+<h3 id="在kibana设置索引自动删除">
+  在Kibana设置索引自动删除
+  <a class="anchor" href="#%e5%9c%a8kibana%e8%ae%be%e7%bd%ae%e7%b4%a2%e5%bc%95%e8%87%aa%e5%8a%a8%e5%88%a0%e9%99%a4">#</a>
+</h3>
+<p>配置索引模板，刚才在filebeat.yml指定的索引模板为java-log-template
+<img src="./images/index-template.png" alt="index-template" title="index-template"/>
+配置数据保留7天
+<img src="./images/data-life.png" alt="data-life" title="data-life"/>
+删除刚才建立的数据流
+<img src="./images/delete-data-stream.png" alt="delete-data-stream" title="delete-data-stream"/>
+删除filebeat的data目录，并重新启动filebeat<br>
+filebeat.yml的<strong>setup.template.overwrite: false</strong>索引模板重写必须设置为fasle</p>
+<pre tabindex="0"><code>docker-compose down filebeat
+sudo rm -rf /DATA/filebeat/data/*
+docker-compose up -d filebeat
+</code></pre><p>新的数据流保留时间已经为7天
+<img src="./images/data-life-save.png" alt="data-life-save" title="data-life-save"/></p>
+</article>
  
       
 
@@ -1227,9 +1395,9 @@ POST /_analyze
   <div class="flex flex-wrap justify-between">
 
 
-  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/dba06b7aaa2f0bb735af9ac84c8fa8dd57c97e35" title='Last modified by constructor-md | 2025-04-20' target="_blank" rel="noopener">
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/e95c4ae11aa74c26438d1b6ea9f3dda90c10f64b" title='Last modified by constructor-md | 2025-05-25' target="_blank" rel="noopener">
       <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
-      <span>2025-04-20</span>
+      <span>2025-05-25</span>
     </a>
   </div>
 
@@ -1284,6 +1452,17 @@ POST /_analyze
     <li><a href="#安装ik分词器每个节点都要装">安装IK分词器(每个节点都要装)</a>
       <ul>
         <li><a href="#测试ik分词器">测试IK分词器</a></li>
+      </ul>
+    </li>
+    <li><a href="#efk-收集和查看多节点日志">EFK 收集和查看多节点日志</a>
+      <ul>
+        <li><a href="#目录配置">目录配置</a></li>
+        <li><a href="#filebeatyml">filebeat.yml</a></li>
+        <li><a href="#docker-composeyml">docker-compose.yml</a></li>
+        <li><a href="#启动">启动</a></li>
+        <li><a href="#查看-kibana">查看 Kibana</a></li>
+        <li><a href="#在kibana创建数据视图查看数据">在Kibana创建数据视图查看数据</a></li>
+        <li><a href="#在kibana设置索引自动删除">在Kibana设置索引自动删除</a></li>
       </ul>
     </li>
   </ul>
