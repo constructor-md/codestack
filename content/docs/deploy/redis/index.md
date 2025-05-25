@@ -260,7 +260,7 @@ slowlog-max-len 128
 replicaof 192.168.1.11 63790
 
 # master节点的requiepass
-masterauth bucunzaide82838161
+masterauth **********
 
 # 从节点只读，默认为yes，建议保留默认配置
 replica-read-only yes
@@ -411,7 +411,7 @@ SENTINEL RESET mymaster
 ```
 # 主从节点登录redis
 sudo docker exec -it redis7 /bin/bash
-redis-cli -p 63790 -a bucunzaide82838161
+redis-cli -p 63790 -a **********
 info replication
 
 

@@ -185,7 +185,7 @@ use mysql;
 # 删除'root'@'%' 不删除'root'@'localhost' 保留本机访问权限
 DROP USER 'root'@'%';
 # 创建'root'@'192.168.1.*' 建立局域网访问权限
-CREATE USER 'root'@'192.168.1.%' IDENTIFIED BY 'bucunzaide2333';
+CREATE USER 'root'@'192.168.1.%' IDENTIFIED BY '*******';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'192.168.1.%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 

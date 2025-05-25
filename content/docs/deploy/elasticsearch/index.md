@@ -42,7 +42,7 @@ services:
       restart: always
       environment:
         - "ES_JAVA_OPTS=-Xms4g -Xmx4g" # 宿主机最大内存的一半 再留点给其他应用
-        - "ELASTIC_PASSWORD=bucunzaide2333"
+        - "ELASTIC_PASSWORD=********"
         - "TZ=Asia/Shanghai"
       ports:
         - "19200:19200"
@@ -99,7 +99,7 @@ volumes:
 sudo docker-compose up -d es
 
 # 验证节点状态
-curl --cacert /DATA/es/config/certs/http_ca.crt -u elastic:bucunzaide2333 https://localhost:19200/_cluster/health?pretty
+curl --cacert /DATA/es/config/certs/http_ca.crt -u elastic:****** https://localhost:19200/_cluster/health?pretty
 
 
 ```
@@ -145,7 +145,7 @@ exit
 
 # https证书保持各节点自己的 各类客户端访问不使用https
 # 检查https是否可以访问 curl访问-k跳过证书验证 浏览器https高级继续 （不认自签名证书）
-curl -k --cacert /DATA/es/config/certs/http_ca.crt -u elastic:bucunzaide2333 https://localhost:19200/_cluster/health?pretty
+curl -k --cacert /DATA/es/config/certs/http_ca.crt -u elastic:********** https://localhost:19200/_cluster/health?pretty
 
 
 ```
@@ -220,7 +220,7 @@ sudo docker-compose up -d es
 sudo docker-compose up -d es
 
 # 验证节点状态
-curl -u elastic:bucunzaide2333 http://localhost:19200/_cluster/health?pretty
+curl -u elastic:******** http://localhost:19200/_cluster/health?pretty
 {
   "cluster_name" : "docker-cluster",
   #  green  ：所有主分片和副本分片都已分配，集群状态良好。
@@ -244,7 +244,7 @@ curl -u elastic:bucunzaide2333 http://localhost:19200/_cluster/health?pretty
   "task_max_waiting_in_queue_millis" : 0,
   "active_shards_percent_as_number" : 100.0
 }
-curl -u elastic:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
+curl -u elastic:********** http://localhost:19200/_cat/nodes?pretty
 192.168.1.13 13 71 2 0.07 0.31 0.22 cdfhilmrstw - es-node3
 192.168.1.12 14 71 2 0.24 0.38 0.26 cdfhilmrstw - es-node2
 192.168.1.11 18 53 2 0.07 0.30 0.22 cdfhilmrstw * es-node1
@@ -256,7 +256,7 @@ sudo docker exec -it es /bin/bash
 ./bin/elasticsearch-reset-password -i -u kibana_system
 
 # 多节点验证是否可以登录
-curl -u kibana_system:bucunzaide2333 http://localhost:19200/_cat/nodes?pretty
+curl -u kibana_system:********** http://localhost:19200/_cat/nodes?pretty
 
 ```
 > 用户和密码单独索引在security
@@ -309,8 +309,8 @@ server.port: 15601
 server.shutdownTimeout: "5s"
 elasticsearch.hosts: [ "http://dataserver1:19200" ]
 elasticsearch.username: "kibana_system"
-elasticsearch.password: "bucunzaide2333"
-i18n.locale: "en"
+elasticsearch.password: "******"
+i18n.locale: "zh-CN"
 monitoring.ui.container.elasticsearch.enabled: true
 
 
@@ -459,3 +459,147 @@ POST /_analyze
 }
 
 ```
+
+
+## EFK 收集和查看多节点日志
+### 目录配置
+```
+mkdir /DATA/filebeat /DATA/filebeat/data
+```
+
+
+### filebeat.yml
+```
+sudo vim /DATA/filebeat/filebeat.yml
+```
+```
+filebeat.inputs:                        #数据输入相关配置
+  - type: filestream            # (必填)数据输入类型是filestream
+    enabled: true
+    paths:
+      - "/var/log/services/kuibu/info.log"
+    fields:
+      server_ip: 192.168.1.23
+    fields_under_root: true
+    tags: ["kuibu"]
+    parsers:
+      - multiline:      # 多行合并
+          type: pattern
+          pattern: '^\['  # 匹配模式。每一行日志是以 "["开头。
+          negate: true
+          match: after
+  - type: filestream            # (必填)数据输入类型是filestream
+    enabled: true
+    paths:
+      - "/var/log/services/knowledge-chain/info.log"
+    fields:
+      server_ip: 192.168.1.23
+    fields_under_root: true
+    tags: ["knowledge-chain"]
+    parsers:
+      - multiline:      # 多行合并
+          type: pattern
+          pattern: '^\['  # 匹配模式。每一行日志是以 "["开头。
+          negate: true
+          match: after
+  - type: filestream            # (必填)数据输入类型是filestream
+    enabled: true
+    paths:
+      - "/var/log/services/linda/info.log"
+    fields:
+      server_ip: 192.168.1.23
+    fields_under_root: true
+    tags: ["linda-brain"]
+    parsers:
+      - multiline:      # 多行合并
+          type: pattern
+          pattern: '^\['  # 匹配模式。每一行日志是以 "["开头。
+          negate: true
+          match: after
+output.elasticsearch:
+  enabled: true
+  hosts: ["192.168.1.11:19200", "192.168.1.12:19200", "192.168.1.13:19200"]
+  username: "elastic"
+  password: "************"
+  indices:
+    - index: "java-log-kuibu-service-%{+yyyy.MM.dd}" 
+      when.contains:
+        tags: "kuibu"
+    - index: "java-log-knowledge-chain-service-%{+yyyy.MM.dd}" 
+      when.contains:
+        tags: "knowledge-chain"
+    - index: "java-log-linda-brain-%{+yyyy.MM.dd}"
+      when.contains:
+        tags: "linda-brain"
+
+#必须把ilm索引生命周期管理关掉(否则上面的indecis索引条件、以及下面的setup.template.pattern将会生效)
+setup.ilm.enabled: false
+#默认索引名称是filebeat，如果想上面自定义索引上面，需要设置 模板name和匹配。pattern必须能匹配 上面设置的索引名称
+setup.template.name: "java-log-template"
+setup.template.pattern: "java-log-*"
+setup.template.overwrite: false
+setup.template.settings:
+  index.number_of_shards: 3             # 索引在ES的分片数
+  index.number_of_replicas: 1   # 每个索引的分片在ES的副本数
+```
+
+### docker-compose.yml
+部署在每一个需要读取日志的服务   
+负责读取日志，并存储到ES
+```
+sudo vim /DATA/docker-compose.yml
+```
+```
+version: '3.8'
+
+services:
+  filebeat:
+    image: docker.io/elastic/filebeat:8.7.0
+    container_name: filebeat
+    user: root
+    restart: always
+    environment:
+      - TZ: Asia/Shanghai
+    volumes:
+      - /DATA/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /DATA/java/kuibu/logs:/var/log/services/kuibu/:ro
+      - /DATA/java/knowledge-chain/logs:/var/log/services/knowledge-chain/:ro
+      - /DATA/filebeat/data:/usr/share/filebeat/data
+      - /etc/localtime:/etc/localtime
+    command: ["filebeat", "-e", "-strict.perms=false"]
+
+```
+
+### 启动
+```
+sudo docker-compose up -d filebeat
+```
+
+### 查看 Kibana
+数据流索引创建成功
+![数据流索引创建成功](./images/data-stream-index-created.png "数据流索引创建成功")
+
+### 在Kibana创建数据视图查看数据
+![数据视图](./images/data-view.png "数据视图")
+![数据视图创建](./images/data-view-create.png "数据视图创建")
+在Discover内查看数据视图
+![Discover](./images/discover.png "Discover")
+选定数据视图，找到对应字段，即可看到收集到的日志，并进行筛选
+![log-filter](./images/log-filter.png "log-filter")
+
+### 在Kibana设置索引自动删除
+配置索引模板，刚才在filebeat.yml指定的索引模板为java-log-template
+![index-template](./images/index-template.png "index-template")
+配置数据保留7天
+![data-life](./images/data-life.png "data-life")
+删除刚才建立的数据流
+![delete-data-stream](./images/delete-data-stream.png "delete-data-stream")
+删除filebeat的data目录，并重新启动filebeat  
+filebeat.yml的**setup.template.overwrite: false**索引模板重写必须设置为fasle
+```
+docker-compose down filebeat
+sudo rm -rf /DATA/filebeat/data/*
+docker-compose up -d filebeat
+```
+新的数据流保留时间已经为7天
+![data-life-save](./images/data-life-save.png "data-life-save")
