@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>项目设计 on CodeStack</title>
+    <link>https://constructor-md.github.io/codestack/docs/project/</link>
+    <description>Recent content in 项目设计 on CodeStack</description>
+    <generator>Hugo</generator>
+    <language>zh-CN</language>
+    <atom:link href="https://constructor-md.github.io/codestack/docs/project/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>雪崩|限流|熔断|降级</title>
+      <link>https://constructor-md.github.io/codestack/docs/project/server-runtime-excption/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://constructor-md.github.io/codestack/docs/project/server-runtime-excption/</guid>
+      <description>&lt;h1 id=&#34;雪崩限流熔断降级&#34;&gt;&#xD;&#xA;  雪崩|限流|熔断|降级&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e9%9b%aa%e5%b4%a9%e9%99%90%e6%b5%81%e7%86%94%e6%96%ad%e9%99%8d%e7%ba%a7&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h1&gt;&#xD;&#xA;&lt;h2 id=&#34;服务雪崩&#34;&gt;&#xD;&#xA;  服务雪崩：&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e6%9c%8d%e5%8a%a1%e9%9b%aa%e5%b4%a9&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;p&gt;A 调用 B，B 调用 C&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;如果大量请求突然到 A，如果 A 撑住了，则 A 会将压力传导到 C&lt;/li&gt;&#xA;&lt;li&gt;如果 C 撑不住，则 C 会请求堆积，从而 B 请求堆积，从而 A 不可用&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;解决方式是服务降级和服务熔断&lt;/p&gt;&#xA;&lt;h2 id=&#34;服务限流&#34;&gt;&#xD;&#xA;  服务限流：&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e6%9c%8d%e5%8a%a1%e9%99%90%e6%b5%81&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;p&gt;高并发下，为了保护系统，可以对访问服务的请求进行数量上的限制，防止系统不被大量请求压垮&lt;/p&gt;&#xA;&lt;h2 id=&#34;服务熔断&#34;&gt;&#xD;&#xA;  服务熔断：&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e6%9c%8d%e5%8a%a1%e7%86%94%e6%96%ad&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;p&gt;服务 A 调用的某个服务 B 不可用时，A 为了保证自己不受影响，不再调用服务 B，直接返回一个结果，减轻两个服务的压力，直到 B 恢复&lt;/p&gt;&#xA;&lt;h2 id=&#34;服务降级&#34;&gt;&#xD;&#xA;  服务降级：&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e6%9c%8d%e5%8a%a1%e9%99%8d%e7%ba%a7&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;p&gt;发现系统压力过载时，通过关闭某个服务或限流减轻系统压力&lt;/p&gt;&#xA;&lt;h2 id=&#34;理解&#34;&gt;&#xD;&#xA;  理解&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e7%90%86%e8%a7%a3&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;p&gt;都是为了防止系统崩溃，都会让用户体验到某些功能暂不可用&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;熔断是下游服务故障触发&lt;/li&gt;&#xA;&lt;li&gt;降级是为了主动降低系统负载&lt;/li&gt;&#xA;&lt;/ul&gt;</description>
+    </item>
+    <item>
+      <title>分布式锁实现</title>
+      <link>https://constructor-md.github.io/codestack/docs/project/distributed-lock/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://constructor-md.github.io/codestack/docs/project/distributed-lock/</guid>
+      <description>&lt;h1 id=&#34;分布式锁实现&#34;&gt;&#xD;&#xA;  分布式锁实现&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e5%88%86%e5%b8%83%e5%bc%8f%e9%94%81%e5%ae%9e%e7%8e%b0&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h1&gt;</description>
+    </item>
+    <item>
+      <title>一些设计理论</title>
+      <link>https://constructor-md.github.io/codestack/docs/project/design-theory/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://constructor-md.github.io/codestack/docs/project/design-theory/</guid>
+      <description>&lt;h1 id=&#34;一些设计理论&#34;&gt;&#xD;&#xA;  一些设计理论&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#%e4%b8%80%e4%ba%9b%e8%ae%be%e8%ae%a1%e7%90%86%e8%ae%ba&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h1&gt;&#xD;&#xA;&lt;h2 id=&#34;cap-理论&#34;&gt;&#xD;&#xA;  CAP 理论&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#cap-%e7%90%86%e8%ae%ba&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;C 代表一致性：分布式系统中数据的一致性&lt;/li&gt;&#xA;&lt;li&gt;A 代表可用性：分布式系统是否正常可用&lt;/li&gt;&#xA;&lt;li&gt;P 代表分区容器性：分布式系统中出现网络问题的容错性&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;CAP 理论：分布式系统中不可能同时满足 C 和 A，即要么 CP 要么 AP&lt;/li&gt;&#xA;&lt;li&gt;一致性和可用性只能取其一。需要数据强一致性就会损失可用性，需要可用性保证，就会损失强一致性&lt;/li&gt;&#xA;&lt;li&gt;实际生产环境遵循 BASE 理论&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;base-理论&#34;&gt;&#xD;&#xA;  BASE 理论&#xD;&#xA;  &lt;a class=&#34;anchor&#34; href=&#34;#base-%e7%90%86%e8%ae%ba&#34;&gt;#&lt;/a&gt;&#xD;&#xA;&lt;/h2&gt;&#xD;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;BA：Basically Availiable，基本可用，允许一定程度的不可用，如系统故障导致请求时间变长或非核心部分不可用&lt;/li&gt;&#xA;&lt;li&gt;S：Soft state: 表示分布式系统可以处于一种中间状态，比如数据正在同步&lt;/li&gt;&#xA;&lt;li&gt;E：Eventually consistent: 最终一致性。不要求分布式系统数据实时一致，允许经过一段时间后一致，过程中系统也是可用的&lt;/li&gt;&#xA;&lt;/ol&gt;</description>
+    </item>
+  </channel>
+</rss>

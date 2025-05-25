@@ -1,0 +1,117 @@
+pages
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch pages
+# Your branch is up to date with 'origin/pages'.
+#
+# Changes to be committed:
+#	modified:   404.html
+#	modified:   docs/basic/index.html
+#	modified:   docs/basic/index.xml
+#	modified:   docs/basic/net/application/http/index.html
+#	modified:   docs/basic/net/application/index.html
+#	modified:   docs/basic/net/application/index.xml
+#	modified:   docs/basic/net/index.html
+#	modified:   docs/basic/net/index.xml
+#	modified:   docs/basic/net/transport/index.html
+#	modified:   docs/basic/net/transport/index.xml
+#	modified:   docs/basic/net/transport/tcp/index.html
+#	modified:   docs/deploy/elasticsearch/index.html
+#	modified:   docs/deploy/index.html
+#	modified:   docs/deploy/index.xml
+#	modified:   docs/deploy/minio/index.html
+#	modified:   docs/deploy/mysql/index.html
+#	modified:   docs/deploy/redis/index.html
+#	modified:   docs/deploy/ubuntu/index.html
+#	modified:   docs/index.html
+#	modified:   docs/index.xml
+#	modified:   docs/javaee/index.html
+#	modified:   docs/javaee/index.xml
+#	modified:   docs/javaee/mysql/explain/index.html
+#	modified:   docs/javaee/mysql/index.html
+#	modified:   docs/javaee/mysql/index.xml
+#	modified:   docs/javaee/mysql/innodb_index/index.html
+#	modified:   docs/javaee/mysql/innodb_lock/index.html
+#	modified:   docs/javaee/mysql/innodb_transaction/index.html
+#	modified:   docs/javaee/mysql/logfile/index.html
+#	modified:   docs/javaee/mysql/sql-execution/index.html
+#	modified:   docs/javaee/mysql/tree-high/index.html
+#	modified:   docs/javaee/redis/index.html
+#	modified:   docs/javaee/redis/index.xml
+#	new file:   docs/javaee/spring/aop/1746422829572.png
+#	new file:   docs/javaee/spring/aop/image/pom-aop.png
+#	new file:   docs/javaee/spring/aop/image/pom-springboot.png
+#	new file:   docs/javaee/spring/aop/images/JDKDynamicProxy.png
+#	new file:   docs/javaee/spring/aop/images/abstractAutoProxyCreator.png
+#	new file:   docs/javaee/spring/aop/images/aspect-execute.png
+#	new file:   docs/javaee/spring/aop/images/cglib-getProxy.png
+#	new file:   docs/javaee/spring/aop/images/cglib-proxy-bean.png
+#	new file:   docs/javaee/spring/aop/images/cglib-proxy.png
+#	new file:   docs/javaee/spring/aop/images/createAopProxy-selector.png
+#	new file:   docs/javaee/spring/aop/images/createAopProxy.png
+#	new file:   docs/javaee/spring/aop/images/createProxy.png
+#	new file:   docs/javaee/spring/aop/images/diy-aop-scan.png
+#	new file:   docs/javaee/spring/aop/images/getProxy-createAopProxy.png
+#	new file:   docs/javaee/spring/aop/images/getProxy.png
+#	new file:   docs/javaee/spring/aop/images/method-interceptor.png
+#	new file:   docs/javaee/spring/aop/images/method-proceed.png
+#	new file:   docs/javaee/spring/aop/images/pom-aop.png
+#	new file:   docs/javaee/spring/aop/images/pom-springaop.png
+#	new file:   docs/javaee/spring/aop/images/pom-springboot.png
+#	new file:   docs/javaee/spring/aop/images/pre-getProxy.png
+#	new file:   docs/javaee/spring/aop/images/springboot-aop-bean-register.png
+#	new file:   docs/javaee/spring/aop/images/springboot-aop-bean-register2.png
+#	new file:   docs/javaee/spring/aop/index.html
+#	modified:   docs/javaee/spring/index.html
+#	modified:   docs/javaee/spring/index.xml
+#	modified:   docs/javaee/spring/ioc/index.html
+#	new file:   docs/javaee/spring/transaction/index.html
+#	new file:   en.search-data.min.1750939282aa69fc5da03398190abf008ab346eeb4620f53a7f2f6085e5d75e0.json
+#	new file:   en.search-data.min.185ca28bd94c3bbd46535f997287eeb661c02d8ff1ac545d6dce089b63ac8bbc.json
+#	new file:   en.search-data.min.332cb1a4cf346b21a39b4c99b50e85e2ba53b82200d48f2bfd1b5712dfdad050.json
+#	new file:   en.search-data.min.34bc45bf442d2d74ba478f21500049b800d8f49abc6ae1405cbe94f235ef9fd3.json
+#	new file:   en.search-data.min.39b1a0d7e2fb9e1484b700b51a87064907416534668101770511840bff32970f.json
+#	new file:   en.search-data.min.3b67422fd2328ee167ff3f3a4a078abfdc8e9af71d8f4795d09baf1981ac75ce.json
+#	new file:   en.search-data.min.3ceccb43b90c552572718f316a67ce7f9521eb43d7b571d7f46ebfb134556114.json
+#	new file:   en.search-data.min.4d63176f302d5830db7bdf92b52f59d54cbd2848da63ff9d2caa6244c96bfe99.json
+#	new file:   en.search-data.min.5855651b61020126c15378e46813ea2af20d20916fbd78fc90da4490529c9b65.json
+#	new file:   en.search-data.min.7fb982782a71a045e4b8b4c1a023f0c748226c5c660a62af254e32efcda4e304.json
+#	new file:   en.search-data.min.91b8c6344ce7baba4485da8b8efe18ca4943296f467bff02796f21dbb45cddfc.json
+#	new file:   en.search-data.min.a6d535f8d213ef488a54f4e6ccf76090482f5537414f85831b6e1ca977f6deec.json
+#	new file:   en.search-data.min.af9aa43ca43d071dabec7b0c079f0489307cf750ec50646813f1857cda686e75.json
+#	new file:   en.search-data.min.b9271852333ee941ace4b71a57b6af68288e37920352ed5d4f85bdc9c70d8d6a.json
+#	new file:   en.search-data.min.bb296db0b2abccab0afb455478fa1a4107eba0a0e56af2d4670362975b27baec.json
+#	new file:   en.search-data.min.be26a548ea865dde5a4f323da17628b84f4c58cc910a8845a1802c69a51ea11e.json
+#	new file:   en.search-data.min.c9d4abcf1eb0595f45c9f1d540bfe94fea703c56ffde7547843efa93eec473aa.json
+#	new file:   en.search-data.min.ca66d8c682acda5cc936805e402922067d8644cc60f72236d69f74588840a0b3.json
+#	new file:   en.search-data.min.d8ffa7af1c451f1b0d24e85c653d0d35b0900b3ff523f5e5547259af34eb6b76.json
+#	new file:   en.search-data.min.e87acc541615000f5d892aec6d16806322e4653d07ee320f0c7f6756d796c30d.json
+#	new file:   en.search-data.min.f4e33fbc869e5d0c7f92f40b60aeac16541243c7141e601fccadf1a0e9d644f1.json
+#	new file:   en.search-data.min.fe2352b5ca401e6231c28fad879cc180d2936a7cc378decea962c3631bf2b0cd.json
+#	new file:   en.search.min.03ba8364b5e1926c67ffd5373d9b486cb9b2763a08e28bc3e69ddab49b5c512e.js
+#	new file:   en.search.min.3241f81e78ecd5c1da5de0d0e1e45bd23c1c9d67c51f27275ae6350232982662.js
+#	new file:   en.search.min.325ff29276abcfd25b249b1138e87f7d402f6f897dab6cafd528985c5df4cc53.js
+#	new file:   en.search.min.44fbee3f7c94b322f7f14cdc28ec6fe231d823b65eaea1afce09c1ae12d9484c.js
+#	new file:   en.search.min.4605901518c1819de0020b259d7212076741a222f91c3a6a493ed65a986e2058.js
+#	new file:   en.search.min.596c0e73e71ca0f370f338667e4c0247de0775129dac6d759ed73759d41d52f8.js
+#	new file:   en.search.min.63175c4f53ec3dcd7d7d0847ea3a77c3a1980cc2882db196ca351d4057ebcfbd.js
+#	new file:   en.search.min.74ad27eae55dcc4fef168e4c70fd1ed99e1c7c36ec6fa4c1ad543c0428975d75.js
+#	new file:   en.search.min.756a16d3702262c48e10d295556d5c2bb07630c35dec8a5690a640223c3bdd59.js
+#	new file:   en.search.min.86955635e03365140fcf939584d798ec79a56942f0685724d8f5a842b35578ac.js
+#	new file:   en.search.min.9f7a13f1fa2af97c1da453d5df07421797c6c572bbac8a80b538ea2421574ebd.js
+#	new file:   en.search.min.b04abf1bff9a1fdc0f8c4d6a6581be030e207d9db37fcf417414086836dc6e60.js
+#	new file:   en.search.min.c31fa63277e325190e48fceed95f78b252195bad914ed157483b02ad13c8bd0b.js
+#	new file:   en.search.min.dc952778cb063afb803abe7100d463cf0fb755ebe8c33418626a211983a2846c.js
+#	new file:   en.search.min.df135592a86763c5a6558343f93a5df4abf74233da72ab8ce612e95e9bdf06f1.js
+#	new file:   en.search.min.e3de7995384270c1b68af04b940987ac1c51e79f355961ec96fb3cd2e8b96ae5.js
+#	new file:   en.search.min.ea7a8c22d53b6ffa81e6dd44e196c07105e1a5897052bf2096b3785e61f0a3fe.js
+#	new file:   en.search.min.ee8a36a8c7b945589b73ab908c05c92ec3abd0b7e487dae1af57ba4624eff08a.js
+#	new file:   en.search.min.f435753c3e6f5ab066675b1eb002f6ff56d223a8a37d4d0fb8e6f9a9ede18a01.js
+#	new file:   en.search.min.fd3e8520d221dae9f6876bbbf7803a1ff45f5e311d00a76d62fbaf7fb4cc1cdc.js
+#	new file:   en.search.min.ff1078d87d6855ca1332390e34ce0aeba084ea9b969cb06113d15a7754fe2800.js
+#	new file:   en.search.min.ff6828d1aec45948250194b4af7f6ff7e6d2d0bb3448b3650ca77c3bc078250c.js
+#	modified:   index.html
+#	modified:   index.xml
+#	modified:   sitemap.xml
+#

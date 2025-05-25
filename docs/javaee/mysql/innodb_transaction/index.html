@@ -98,14 +98,14 @@ Purge 操作会遍历 Undo Log 链表，找到那些没有被任何活动事务�
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
-    <meta property="article:modified_time" content="2025-05-03T21:01:31+08:00">
+    <meta property="article:modified_time" content="2025-05-25T18:37:47+08:00">
 <title>InnoDB 事务 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
 <link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/mysql/innodb_transaction/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.756a16d3702262c48e10d295556d5c2bb07630c35dec8a5690a640223c3bdd59.js" integrity="sha256-dWoW03AiYsSOENKVVW1cK7B2MMNd7IpWkKZAIjw73Vk=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.0a3e9fa9d1dc24283183df34a17b0ab51a17e13fb6e7384ca0a9837ec234085c.js" integrity="sha256-Cj6fqdHcJCgxg980oXsKtRoX4T&#43;25zhMoKmDfsI0CFw=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -313,6 +313,58 @@ https://github.com/alex-shpak/hugo-book
         </li>
       
     
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
   </ul>
 
         </li>
@@ -444,6 +496,125 @@ https://github.com/alex-shpak/hugo-book
 
         </li>
       
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
     
   </ul>
 
@@ -591,15 +762,9 @@ https://github.com/alex-shpak/hugo-book
         <li><a href="#持久性durability">持久性（Durability）</a></li>
         <li><a href="#隔离性isolation">隔离性（Isolation）</a></li>
         <li><a href="#mvcc">MVCC</a></li>
+        <li><a href="#对mvcc的误读">对MVCC的误读</a></li>
       </ul>
     </li>
-  </ul>
-
-  <ul>
-    <li><a href="#版本链-1">版本链</a></li>
-    <li><a href="#readview-快照数据">ReadView 快照数据</a></li>
-    <li><a href="#readview如何实现读已提交和可重复读">ReadView如何实现读已提交和可重复读？</a></li>
-    <li><a href="#事务隔离级别与mvcc">事务隔离级别与MVCC</a></li>
   </ul>
 </nav>
 
@@ -707,82 +872,14 @@ trx_id是该行的版本链上某个版本的事务ID</p>
 <li>串行化：
 通过加锁互斥访问，不需要MVCC</li>
 </ul>
-<h1 id="mvcc-多版本并发控制">
-  MVCC 多版本并发控制
-  <a class="anchor" href="#mvcc-%e5%a4%9a%e7%89%88%e6%9c%ac%e5%b9%b6%e5%8f%91%e6%8e%a7%e5%88%b6">#</a>
-</h1>
-<h2 id="版本链-1">
-  版本链
-  <a class="anchor" href="#%e7%89%88%e6%9c%ac%e9%93%be-1">#</a>
-</h2>
-<p>数据库中，以最新记录和undolog中的历史记录形成了版本链</p>
-<p>版本链中每个版本，除了具体行数据之外，还有该版本的事务ID、和回滚指针，每一行记录都有这两个隐藏列</p>
-<p>每个版本的回滚指针指向上一个版本</p>
-<h2 id="readview-快照数据">
-  ReadView 快照数据
-  <a class="anchor" href="#readview-%e5%bf%ab%e7%85%a7%e6%95%b0%e6%8d%ae">#</a>
-</h2>
-<p>作用：让数据库知道在具体查询的时候，应该去查询哪个版本的数据</p>
-<p>数据结构：代码里的一个对象</p>
-<ul>
-<li>m_ids: 生成ReadView时当前系统中活跃的读写事务的事务id列表（未提交）</li>
-<li>min_trax_id: 生成ReadView时当前系统中活跃的读写事务的最小事务id m_ids的最小值（最老的一个未提交）</li>
-<li>max_trx_id: 生成ReadView时系统应该分配给下一个事务的id值（未生成即将生成）</li>
-<li>creator_trx_id: 生成该ReadView的事务的id（创建者）</li>
-</ul>
-<p>ReadView如何判断版本链中哪个版本可用？</p>
-<ul>
-<li>Trx_id == creator_trx_id 可以访问这个版本（创建者可以访问）</li>
-<li>Trx_id &lt; min_trx_id 可以访问这个版本（可以访问已提交的数据）</li>
-<li>Trx_id &gt; max_trx_id 不可以访问这个版本（当前事务不能访问超过当前版本链的数据）</li>
-<li>Min_trx_id &lt;= trx_id &lt;= max_trx_id 如果trx_id在m_ids中，就可以不访问这个版本，因为里面的数据都没有commit</li>
-</ul>
-<h2 id="readview如何实现读已提交和可重复读">
-  ReadView如何实现读已提交和可重复读？
-  <a class="anchor" href="#readview%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e8%af%bb%e5%b7%b2%e6%8f%90%e4%ba%a4%e5%92%8c%e5%8f%af%e9%87%8d%e5%a4%8d%e8%af%bb">#</a>
-</h2>
-<p>版本链是全局的，没有事务时版本链的头部是最新数据，后面是每个版本的历史数据</p>
-<p>如果有多个事务同时更新某一行数据，每个事务的更新，都会在版本链上生成一个版本</p>
-<ol>
-<li>执行一个select前
-先生成一个当前事务的ReadView，ReadView包含上述数据</li>
-<li>让ReadView在版本链从头到尾比较：(版本数据对查询的可见性)</li>
-</ol>
-<ul>
-<li>如果该版本是当前事务提交的，那自然可以访问该数据，且该版本未提交也可以访问</li>
-<li>如果该版本不是当前事务提交，但是是已提交的数据，当然可以访问</li>
-<li>如果该版本数据是当前事务之后生成的事务生成的版本，那么肯定没有提交，不能访问</li>
-<li>如果该版本数据是当前事务生成ReadView时的未提交事务之一，那么不能访问这些未提交的数据</li>
-</ul>
-<h2 id="事务隔离级别与mvcc">
-  事务隔离级别与MVCC
-  <a class="anchor" href="#%e4%ba%8b%e5%8a%a1%e9%9a%94%e7%a6%bb%e7%ba%a7%e5%88%ab%e4%b8%8emvcc">#</a>
-</h2>
-<ul>
-<li>
-<p>如果是读已提交：
-则每次select都会生成ReadView，使得除了creator_trx_id以外的数据有所变化</p>
-<p>于是每次select都可以访问到最新的提交数据，或者是自己的修改数据</p>
-<p>访问到的最新提交数据可能变化</p>
-</li>
-<li>
-<p>如果是可重复读：
-仅在第一次select生成ReadView</p>
-<p>从而每次要么访问到自己的最新修改，要么一直是生成当时的最新提交数据，不会变化</p>
-</li>
-<li>
-<p>如果是读未提交：
-则每次直接访问最新的版本链数据，不关心是否提交，不需要MVCC</p>
-</li>
-<li>
-<p>如果是串行化：
-则通过加锁互斥访问，不需要MVCC</p>
-</li>
-</ul>
-<blockquote>
-<p>幻读问题的解决：</p>
-<p>可明确的是：仅在快照读的情况下可以解决幻读，当前读不能解决幻读</p>
-<p>幻读指的是两次查询前后，因为中间有事务提交，导致查询得到的数据量不符合</p></blockquote>
+<h3 id="对mvcc的误读">
+  对MVCC的误读
+  <a class="anchor" href="#%e5%af%b9mvcc%e7%9a%84%e8%af%af%e8%af%bb">#</a>
+</h3>
+<p>并非所有增删改查都使用快照读<br>
+实际上只有select 使用MVCC快照读<br>
+但update insert delete都是当前读！<br>
+在 MySQL 的可重复读隔离级别下，UPDATE、DELETE、INSERT操作隐式使用当前读，并通过加锁（行锁、间隙锁或表锁）保证数据一致性和防止幻读</p>
 </article>
  
       
@@ -792,9 +889,9 @@ trx_id是该行的版本链上某个版本的事务ID</p>
   <div class="flex flex-wrap justify-between">
 
 
-  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/4153ac4c0815faa621e991b6f04f4a06da89012e" title='Last modified by constructor-md | 2025-05-03' target="_blank" rel="noopener">
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/2efcca7dc30cfa49de4fd8ecfbb16c7ce039c75d" title='Last modified by constructor-md | 2025-05-25' target="_blank" rel="noopener">
       <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
-      <span>2025-05-03</span>
+      <span>2025-05-25</span>
     </a>
   </div>
 
@@ -837,15 +934,9 @@ trx_id是该行的版本链上某个版本的事务ID</p>
         <li><a href="#持久性durability">持久性（Durability）</a></li>
         <li><a href="#隔离性isolation">隔离性（Isolation）</a></li>
         <li><a href="#mvcc">MVCC</a></li>
+        <li><a href="#对mvcc的误读">对MVCC的误读</a></li>
       </ul>
     </li>
-  </ul>
-
-  <ul>
-    <li><a href="#版本链-1">版本链</a></li>
-    <li><a href="#readview-快照数据">ReadView 快照数据</a></li>
-    <li><a href="#readview如何实现读已提交和可重复读">ReadView如何实现读已提交和可重复读？</a></li>
-    <li><a href="#事务隔离级别与mvcc">事务隔离级别与MVCC</a></li>
   </ul>
 </nav>
 

@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  SpringMVC 接收 HTTP
+  #
+
+
+SpringMVC 是一个基于 Spring 的 Web 框架，运行于 Tomcat 等 Servlet 容器上
+SpringBoot 内置 Tomcat 容器
+
+当使用原生 Java Servlet 实现 Web 服务器，运行于 Tomcat 上时
+
+用户发起一个 HTTP 请求，Tomcat 收到请求，解析 HTTP 报文
+Tomcat 根据 URL 找到对应的 Servlet，构建 HttpServletRequest 和 HttpServletResponce 对象，调用 servlet 的 service 方法，将对象引用传入该方法
+Service 方法获取 Http 请求相关的信息，区分请求类型调用不同的方法，将处理结果放入 Responce 对象。
+Tomcat 将 Responce 对象封装成 Http 响应报文，返回给客户端。
+
+当使用 SpringMVC 实现 Web 容器，运行于 Tomcat 上时：
+
+用户发起一个 HTTP 请求，Tomcat 收到请求，生成一个线程解析 HTTP 报文
+Tomcat 生成 HttpRequest 和 HttpResponce 对象，调用 HttpServlet.service 方法，最终将对象转发给 DispatcherServlet.doService 方法（即全流程只有一个 servlet 存在，与 URL 无关）
+DispatcherServlet 是统一访问点，将请求委托给其他业务处理器。doService 方法调用 doDispatch 方法执行分发
+在 Tomcat 初始化时，通知 Spring 初始化容器，SpringMVC 会遍历容器中的 Bean，找到每一个 Controller 的所有方法访问的 url，和 Controller 保存到一个 Map 中。（HandlerMapping 组件获得了 URL 和 Controller 的关系）
+分发时 doDispatch 方法根据 URL 找到 Controller，找到 Controller 中对应的方法。将 request 的参数等和方法上的参数根据注解等进行绑定，最后通过反射调用方法。
+具体业务逻辑执行完后，回到 DispatcherServlet，进行后续处理，封装视图等
+Tomcat 将响应对象封装成 HTTP 响应报文，返回给客户端
+
+
+拦截器是在 Spring 中起作用，具体在分发前执行前置拦截器逻辑，分发后执行后置拦截器逻辑
+过滤器是在 Tomcat 中起作用，具体在进入 servlet 前后进行预处理
+切面是在具体方法前起作用，具体在调用方法逻辑前后，会处理注解、切点等的逻辑
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/spring/springmvc-http/indxe/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="SpringMVC 接收 HTTP">
+  <meta property="og:description" content="SpringMVC 接收 HTTP#SpringMVC 是一个基于 Spring 的 Web 框架，运行于 Tomcat 等 Servlet 容器上 SpringBoot 内置 Tomcat 容器 当使用原生 Java Servlet 实现 Web 服务器，运行于 Tomcat 上时
+用户发起一个 HTTP 请求，Tomcat 收到请求，解析 HTTP 报文 Tomcat 根据 URL 找到对应的 Servlet，构建 HttpServletRequest 和 HttpServletResponce 对象，调用 servlet 的 service 方法，将对象引用传入该方法 Service 方法获取 Http 请求相关的信息，区分请求类型调用不同的方法，将处理结果放入 Responce 对象。 Tomcat 将 Responce 对象封装成 Http 响应报文，返回给客户端。 当使用 SpringMVC 实现 Web 容器，运行于 Tomcat 上时：
+用户发起一个 HTTP 请求，Tomcat 收到请求，生成一个线程解析 HTTP 报文 Tomcat 生成 HttpRequest 和 HttpResponce 对象，调用 HttpServlet.service 方法，最终将对象转发给 DispatcherServlet.doService 方法（即全流程只有一个 servlet 存在，与 URL 无关） DispatcherServlet 是统一访问点，将请求委托给其他业务处理器。doService 方法调用 doDispatch 方法执行分发 在 Tomcat 初始化时，通知 Spring 初始化容器，SpringMVC 会遍历容器中的 Bean，找到每一个 Controller 的所有方法访问的 url，和 Controller 保存到一个 Map 中。（HandlerMapping 组件获得了 URL 和 Controller 的关系） 分发时 doDispatch 方法根据 URL 找到 Controller，找到 Controller 中对应的方法。将 request 的参数等和方法上的参数根据注解等进行绑定，最后通过反射调用方法。 具体业务逻辑执行完后，回到 DispatcherServlet，进行后续处理，封装视图等 Tomcat 将响应对象封装成 HTTP 响应报文，返回给客户端 拦截器是在 Spring 中起作用，具体在分发前执行前置拦截器逻辑，分发后执行后置拦截器逻辑 过滤器是在 Tomcat 中起作用，具体在进入 servlet 前后进行预处理 切面是在具体方法前起作用，具体在调用方法逻辑前后，会处理注解、切点等的逻辑">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-05T17:05:30+08:00">
+<title>SpringMVC 接收 HTTP | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/spring/springmvc-http/indxe/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.0a3e9fa9d1dc24283183df34a17b0ab51a17e13fb6e7384ca0a9837ec234085c.js" integrity="sha256-Cj6fqdHcJCgxg980oXsKtRoX4T&#43;25zhMoKmDfsI0CFw=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="active">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>SpringMVC 接收 HTTP</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents"></nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="springmvc-接收-http">
+  SpringMVC 接收 HTTP
+  <a class="anchor" href="#springmvc-%e6%8e%a5%e6%94%b6-http">#</a>
+</h1>
+<ul>
+<li>SpringMVC 是一个基于 Spring 的 Web 框架，运行于 Tomcat 等 Servlet 容器上</li>
+<li>SpringBoot 内置 Tomcat 容器</li>
+</ul>
+<p>当使用原生 Java Servlet 实现 Web 服务器，运行于 Tomcat 上时</p>
+<ol>
+<li>用户发起一个 HTTP 请求，Tomcat 收到请求，解析 HTTP 报文</li>
+<li>Tomcat 根据 URL 找到对应的 Servlet，构建 HttpServletRequest 和 HttpServletResponce 对象，调用 servlet 的 service 方法，将对象引用传入该方法</li>
+<li>Service 方法获取 Http 请求相关的信息，区分请求类型调用不同的方法，将处理结果放入 Responce 对象。</li>
+<li>Tomcat 将 Responce 对象封装成 Http 响应报文，返回给客户端。</li>
+</ol>
+<p>当使用 SpringMVC 实现 Web 容器，运行于 Tomcat 上时：</p>
+<ol>
+<li>用户发起一个 HTTP 请求，Tomcat 收到请求，生成一个线程解析 HTTP 报文</li>
+<li>Tomcat 生成 HttpRequest 和 HttpResponce 对象，调用 HttpServlet.service 方法，最终将对象转发给 DispatcherServlet.doService 方法（即全流程只有一个 servlet 存在，与 URL 无关）</li>
+<li>DispatcherServlet 是统一访问点，将请求委托给其他业务处理器。doService 方法调用 doDispatch 方法执行分发</li>
+<li>在 Tomcat 初始化时，通知 Spring 初始化容器，SpringMVC 会遍历容器中的 Bean，找到每一个 Controller 的所有方法访问的 url，和 Controller 保存到一个 Map 中。（HandlerMapping 组件获得了 URL 和 Controller 的关系）</li>
+<li>分发时 doDispatch 方法根据 URL 找到 Controller，找到 Controller 中对应的方法。将 request 的参数等和方法上的参数根据注解等进行绑定，最后通过反射调用方法。</li>
+<li>具体业务逻辑执行完后，回到 DispatcherServlet，进行后续处理，封装视图等</li>
+<li>Tomcat 将响应对象封装成 HTTP 响应报文，返回给客户端</li>
+</ol>
+<ul>
+<li>拦截器是在 Spring 中起作用，具体在分发前执行前置拦截器逻辑，分发后执行后置拦截器逻辑</li>
+<li>过滤器是在 Tomcat 中起作用，具体在进入 servlet 前后进行预处理</li>
+<li>切面是在具体方法前起作用，具体在调用方法逻辑前后，会处理注解、切点等的逻辑</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/0fdcab42de3035ca558bcb6607e20b196bb9751d" title='Last modified by constructor-md | 2025-05-05' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-05</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents"></nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
