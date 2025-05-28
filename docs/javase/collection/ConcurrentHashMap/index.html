@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  ConcurrentHashMap
+  #
+
+是一个支持高并发更新和查询的哈希表，基于 HashMap 实现
+HashMap 本身没有对多线程情况进行线程安全的处理 
+如果改用 HashTable 或者 Collections.synchronizedMap，则会对整个容器进行加锁，通知时间的其他操作都会被阻塞
+但是 ConcurrentHashMap 不对整个容器加锁，而是对一小部分加锁，不影响其他位置的操作
+
+  数据结构
+  #
+
+
+  JDK1.8 以前：Segement&#43;ReentranLock（分段锁）
+  #
+
+
+由 HashMap 实现的 Segment 组成，实际是多段的 HashMap。可以理解为 ConcurrentHashMap 中有一个 Segement 数组，每个 Segement 就是一个 HashMap。
+采用分段锁的思想。写操作时，通过只锁涉及到的 Segment 的方式，保证修改的线程安全，同时不影响其它部分的并发操作。
+Segment 内部进行扩容，和 HashMap 的扩容逻辑相似，先生成新数组，然后转移元素到新数组中。
+每个 Segment 单独扩容，互不干扰。是否需要扩容也是 Segment 内部单独判断，是否超过阈值
+默认创建 16 个 Segment，即默认最多允许并发 16 个不同的写
+并发度是Segment数量，比较固定
+
+
+  Segment 实现的弊端
+  #
+
+
+寻找元素需要两次 Hash
+提供了并发级别的默认设置，默认 16 个 Segment，无法根据实际场景动态调整，但是不一定适用于大部分场景，最好是让用户自己评估需要多少把锁
+存储成本比 HashMap 高，每个 Segment 最小容量为 2，默认并发级别 16，假如只需要存储 16 个元素，那么会建立一个 32 容量的 ConcurrentHashMap 来存
+
+
+  JDK1.8 以后：Node&#43;Synchronized&#43;CAS
+  #
+
+
+采用 Node 数组&#43;链表/红黑树的数据结构（与HashMap高度相似 Node也只是一个数据节点）
+当链表长度超过 8 且数组长度 ≥ 64 时，链表转换为红黑树，提升查询效率
+每次操作某个槽位，都以该槽位的第一个元素作为锁，通过 synchronized 加锁，其他节点内仍可并发。锁粒度降到最低
+依赖 JVM 对 synchronized 的轻量级锁优化，性能优于显式 ReentrantLock
+槽位为空时（无锁写入），通过 CAS 原子操作直接写入数据
+移除 Segment，降低锁粒度、减少内存开销和哈希计算次数
+无锁读：通过 volatile 修饰的 Node 数组保证可见性，直接读取头节点。若为链表，遍历链表；若为红黑树，通过树结构查找
+并发度是理论上限为数组长度，随着数据变化动态调整
+
+
+  put 操作流程
+  #
+
+
+数组是否初始化，没有则初始化数组
+插入位置是否为空，是则使用 CAS 写入，size&#43;1 并检查是否需要扩容
+是否正在扩容，是则协助扩容，扩容完毕后再从头判断起
+当前节点加锁，插入数据，解锁，szie&#43;1 并检查是否需要扩容
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/collection/ConcurrentHashMap/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="ConcurrentHashMap">
+  <meta property="og:description" content="ConcurrentHashMap#是一个支持高并发更新和查询的哈希表，基于 HashMap 实现
+HashMap 本身没有对多线程情况进行线程安全的处理 如果改用 HashTable 或者 Collections.synchronizedMap，则会对整个容器进行加锁，通知时间的其他操作都会被阻塞
+但是 ConcurrentHashMap 不对整个容器加锁，而是对一小部分加锁，不影响其他位置的操作
+数据结构#JDK1.8 以前：Segement&#43;ReentranLock（分段锁）#由 HashMap 实现的 Segment 组成，实际是多段的 HashMap。可以理解为 ConcurrentHashMap 中有一个 Segement 数组，每个 Segement 就是一个 HashMap。 采用分段锁的思想。写操作时，通过只锁涉及到的 Segment 的方式，保证修改的线程安全，同时不影响其它部分的并发操作。 Segment 内部进行扩容，和 HashMap 的扩容逻辑相似，先生成新数组，然后转移元素到新数组中。 每个 Segment 单独扩容，互不干扰。是否需要扩容也是 Segment 内部单独判断，是否超过阈值 默认创建 16 个 Segment，即默认最多允许并发 16 个不同的写 并发度是Segment数量，比较固定 Segment 实现的弊端#寻找元素需要两次 Hash 提供了并发级别的默认设置，默认 16 个 Segment，无法根据实际场景动态调整，但是不一定适用于大部分场景，最好是让用户自己评估需要多少把锁 存储成本比 HashMap 高，每个 Segment 最小容量为 2，默认并发级别 16，假如只需要存储 16 个元素，那么会建立一个 32 容量的 ConcurrentHashMap 来存 JDK1.8 以后：Node&#43;Synchronized&#43;CAS#采用 Node 数组&#43;链表/红黑树的数据结构（与HashMap高度相似 Node也只是一个数据节点） 当链表长度超过 8 且数组长度 ≥ 64 时，链表转换为红黑树，提升查询效率 每次操作某个槽位，都以该槽位的第一个元素作为锁，通过 synchronized 加锁，其他节点内仍可并发。锁粒度降到最低 依赖 JVM 对 synchronized 的轻量级锁优化，性能优于显式 ReentrantLock 槽位为空时（无锁写入），通过 CAS 原子操作直接写入数据 移除 Segment，降低锁粒度、减少内存开销和哈希计算次数 无锁读：通过 volatile 修饰的 Node 数组保证可见性，直接读取头节点。若为链表，遍历链表；若为红黑树，通过树结构查找 并发度是理论上限为数组长度，随着数据变化动态调整 put 操作流程#数组是否初始化，没有则初始化数组 插入位置是否为空，是则使用 CAS 写入，size&#43;1 并检查是否需要扩容 是否正在扩容，是则协助扩容，扩容完毕后再从头判断起 当前节点加锁，插入数据，解锁，szie&#43;1 并检查是否需要扩容">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>ConcurrentHashMap | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/collection/ConcurrentHashMap/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="active">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>ConcurrentHashMap</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a>
+      <ul>
+        <li><a href="#jdk18-以前segementreentranlock分段锁">JDK1.8 以前：Segement+ReentranLock（分段锁）</a></li>
+        <li><a href="#jdk18-以后nodesynchronizedcas">JDK1.8 以后：Node+Synchronized+CAS</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="concurrenthashmap">
+  ConcurrentHashMap
+  <a class="anchor" href="#concurrenthashmap">#</a>
+</h1>
+<p>是一个支持高并发更新和查询的哈希表，基于 HashMap 实现<br>
+HashMap 本身没有对多线程情况进行线程安全的处理 <br>
+如果改用 HashTable 或者 Collections.synchronizedMap，则会对整个容器进行加锁，通知时间的其他操作都会被阻塞<br>
+但是 ConcurrentHashMap 不对整个容器加锁，而是对一小部分加锁，不影响其他位置的操作</p>
+<h2 id="数据结构">
+  数据结构
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84">#</a>
+</h2>
+<h3 id="jdk18-以前segementreentranlock分段锁">
+  JDK1.8 以前：Segement+ReentranLock（分段锁）
+  <a class="anchor" href="#jdk18-%e4%bb%a5%e5%89%8dsegementreentranlock%e5%88%86%e6%ae%b5%e9%94%81">#</a>
+</h3>
+<ol>
+<li>由 HashMap 实现的 Segment 组成，实际是多段的 HashMap。可以理解为 ConcurrentHashMap 中有一个 Segement 数组，每个 Segement 就是一个 HashMap。</li>
+<li>采用分段锁的思想。写操作时，通过只锁涉及到的 Segment 的方式，保证修改的线程安全，同时不影响其它部分的并发操作。</li>
+<li>Segment 内部进行扩容，和 HashMap 的扩容逻辑相似，先生成新数组，然后转移元素到新数组中。</li>
+<li>每个 Segment 单独扩容，互不干扰。是否需要扩容也是 Segment 内部单独判断，是否超过阈值</li>
+<li>默认创建 16 个 Segment，即默认最多允许并发 16 个不同的写</li>
+<li>并发度是Segment数量，比较固定</li>
+</ol>
+<h4 id="segment-实现的弊端">
+  Segment 实现的弊端
+  <a class="anchor" href="#segment-%e5%ae%9e%e7%8e%b0%e7%9a%84%e5%bc%8a%e7%ab%af">#</a>
+</h4>
+<ol>
+<li>寻找元素需要两次 Hash</li>
+<li>提供了并发级别的默认设置，默认 16 个 Segment，无法根据实际场景动态调整，但是不一定适用于大部分场景，最好是让用户自己评估需要多少把锁</li>
+<li>存储成本比 HashMap 高，每个 Segment 最小容量为 2，默认并发级别 16，假如只需要存储 16 个元素，那么会建立一个 32 容量的 ConcurrentHashMap 来存</li>
+</ol>
+<h3 id="jdk18-以后nodesynchronizedcas">
+  JDK1.8 以后：Node+Synchronized+CAS
+  <a class="anchor" href="#jdk18-%e4%bb%a5%e5%90%8enodesynchronizedcas">#</a>
+</h3>
+<ol>
+<li>采用 Node 数组+链表/红黑树的数据结构（与HashMap高度相似 Node也只是一个数据节点）</li>
+<li>当链表长度超过 8 且数组长度 ≥ 64 时，链表转换为红黑树，提升查询效率</li>
+<li>每次操作某个槽位，都以该槽位的第一个元素作为锁，通过 synchronized 加锁，其他节点内仍可并发。锁粒度降到最低</li>
+<li>依赖 JVM 对 synchronized 的轻量级锁优化，性能优于显式 ReentrantLock</li>
+<li>槽位为空时（无锁写入），通过 CAS 原子操作直接写入数据</li>
+<li>移除 Segment，降低锁粒度、减少内存开销和哈希计算次数</li>
+<li>无锁读：通过 volatile 修饰的 Node 数组保证可见性，直接读取头节点。若为链表，遍历链表；若为红黑树，通过树结构查找</li>
+<li>并发度是理论上限为数组长度，随着数据变化动态调整</li>
+</ol>
+<h4 id="put-操作流程">
+  put 操作流程
+  <a class="anchor" href="#put-%e6%93%8d%e4%bd%9c%e6%b5%81%e7%a8%8b">#</a>
+</h4>
+<ol>
+<li>数组是否初始化，没有则初始化数组</li>
+<li>插入位置是否为空，是则使用 CAS 写入，size+1 并检查是否需要扩容</li>
+<li>是否正在扩容，是则协助扩容，扩容完毕后再从头判断起</li>
+<li>当前节点加锁，插入数据，解锁，szie+1 并检查是否需要扩容</li>
+</ol>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a>
+      <ul>
+        <li><a href="#jdk18-以前segementreentranlock分段锁">JDK1.8 以前：Segement+ReentranLock（分段锁）</a></li>
+        <li><a href="#jdk18-以后nodesynchronizedcas">JDK1.8 以后：Node+Synchronized+CAS</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  ArrayList 和 LinkedList
+  #
+
+
+  ArrayList
+  #
+
+ArrayList是一个可扩容的，底层用数组实现的，非线程安全的集合类
+
+实现RamdonAsceess接口，无实质内容，声明性质，表明ArrayList支持随机访问
+实现Cloneable，声明需要复写clone()接口，且可以支持克隆
+实现Serializable，声明可序列化
+初始容量10，最大容量Integer.MAX_VALUE - 8。
+出现可能越界的操作时检查是否需要扩容，每次扩容为原来的1.5倍
+内部维护元素的数组使用transient修饰，阻止默认的序列化和反序列化。原因是大多情况下数组不是满的，默认的序列化会把空的部分也序列化进去。ArrayList自己实现了合适的序列化和反序列化方法
+内部维护一个自增变量，记录修改的次数，添加、删除、扩容都会使操作数&#43;&#43;，相当于版本号。作用是在迭代器遍历过程中检查数组是否被修改，迭代器遍历过程中是禁止修改的。只要版本号不对，就会抛出异常，这就是fail-fast
+扩容方法是新建一个更大容量的数组，然后将元素复制过去。
+
+
+  LinkedList
+  #
+
+LinkedList一个内部用双向链表实现的List，同时实现了Deque接口，可以当作队列或者栈来使用。
+
+实现Cloneable和Serializable，可以被克隆也可以被序列化
+克隆时和ArrayList一样是浅拷贝
+实现了Deque接口，支持两端的元素插入和删除
+继承AbstractSequential类，声明支持按次序访问
+内部维护头节点和尾节点，以及元素个数
+内部静态类Node包含元素、前驱和后继节点
+支持从头部、尾部、任意位置添加、删除元素
+
+
+  对比
+  #
+
+ArrayList是数组，LinkedList是链表
+
+基于数组的ArrayList，底层连续存储
+知道第一个元素的位置就可以通过索引快速访问到后续元素，随机查找速度O(1)
+删除数据和插入数据可能需要重排数据中的所有数据或者是更新索引，开销大O(n)
+ArrayList需要扩容，每次扩容会备用一些没被使用的数组空间
+基于链表的LinkedList，底层可以离散存储
+每个节点存储数据、前一个元素引用、后一个元素引用
+增删时不需要像数组那样重新计算大小或者更新索引，增删速度O(1)
+查询需要逐个元素直到找到，效率低O(n)
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/collection/ArrayList-LinkedList/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="ArrayList|LinkedList">
+  <meta property="og:description" content="ArrayList 和 LinkedList#ArrayList#ArrayList是一个可扩容的，底层用数组实现的，非线程安全的集合类
+实现RamdonAsceess接口，无实质内容，声明性质，表明ArrayList支持随机访问 实现Cloneable，声明需要复写clone()接口，且可以支持克隆 实现Serializable，声明可序列化 初始容量10，最大容量Integer.MAX_VALUE - 8。 出现可能越界的操作时检查是否需要扩容，每次扩容为原来的1.5倍 内部维护元素的数组使用transient修饰，阻止默认的序列化和反序列化。原因是大多情况下数组不是满的，默认的序列化会把空的部分也序列化进去。ArrayList自己实现了合适的序列化和反序列化方法 内部维护一个自增变量，记录修改的次数，添加、删除、扩容都会使操作数&#43;&#43;，相当于版本号。作用是在迭代器遍历过程中检查数组是否被修改，迭代器遍历过程中是禁止修改的。只要版本号不对，就会抛出异常，这就是fail-fast 扩容方法是新建一个更大容量的数组，然后将元素复制过去。 LinkedList#LinkedList一个内部用双向链表实现的List，同时实现了Deque接口，可以当作队列或者栈来使用。
+实现Cloneable和Serializable，可以被克隆也可以被序列化 克隆时和ArrayList一样是浅拷贝 实现了Deque接口，支持两端的元素插入和删除 继承AbstractSequential类，声明支持按次序访问 内部维护头节点和尾节点，以及元素个数 内部静态类Node包含元素、前驱和后继节点 支持从头部、尾部、任意位置添加、删除元素 对比#ArrayList是数组，LinkedList是链表
+基于数组的ArrayList，底层连续存储
+知道第一个元素的位置就可以通过索引快速访问到后续元素，随机查找速度O(1)
+删除数据和插入数据可能需要重排数据中的所有数据或者是更新索引，开销大O(n)
+ArrayList需要扩容，每次扩容会备用一些没被使用的数组空间 基于链表的LinkedList，底层可以离散存储
+每个节点存储数据、前一个元素引用、后一个元素引用 增删时不需要像数组那样重新计算大小或者更新索引，增删速度O(1)
+查询需要逐个元素直到找到，效率低O(n)">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>ArrayList|LinkedList | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/collection/ArrayList-LinkedList/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="active">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>ArrayList|LinkedList</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#arraylist">ArrayList</a></li>
+    <li><a href="#linkedlist">LinkedList</a></li>
+    <li><a href="#对比">对比</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="arraylist-和-linkedlist">
+  ArrayList 和 LinkedList
+  <a class="anchor" href="#arraylist-%e5%92%8c-linkedlist">#</a>
+</h1>
+<h2 id="arraylist">
+  ArrayList
+  <a class="anchor" href="#arraylist">#</a>
+</h2>
+<p>ArrayList是一个可扩容的，底层用数组实现的，非线程安全的集合类</p>
+<ol>
+<li>实现RamdonAsceess接口，无实质内容，声明性质，表明ArrayList支持随机访问</li>
+<li>实现Cloneable，声明需要复写clone()接口，且可以支持克隆</li>
+<li>实现Serializable，声明可序列化</li>
+<li>初始容量10，最大容量Integer.MAX_VALUE - 8。</li>
+<li>出现可能越界的操作时检查是否需要扩容，每次扩容为原来的1.5倍</li>
+<li>内部维护元素的数组使用transient修饰，阻止默认的序列化和反序列化。原因是大多情况下数组不是满的，默认的序列化会把空的部分也序列化进去。ArrayList自己实现了合适的序列化和反序列化方法</li>
+<li>内部维护一个自增变量，记录修改的次数，添加、删除、扩容都会使操作数++，相当于版本号。作用是在迭代器遍历过程中检查数组是否被修改，迭代器遍历过程中是禁止修改的。只要版本号不对，就会抛出异常，这就是fail-fast</li>
+<li>扩容方法是新建一个更大容量的数组，然后将元素复制过去。</li>
+</ol>
+<h2 id="linkedlist">
+  LinkedList
+  <a class="anchor" href="#linkedlist">#</a>
+</h2>
+<p>LinkedList一个内部用双向链表实现的List，同时实现了Deque接口，可以当作队列或者栈来使用。</p>
+<ol>
+<li>实现Cloneable和Serializable，可以被克隆也可以被序列化</li>
+<li>克隆时和ArrayList一样是浅拷贝</li>
+<li>实现了Deque接口，支持两端的元素插入和删除</li>
+<li>继承AbstractSequential类，声明支持按次序访问</li>
+<li>内部维护头节点和尾节点，以及元素个数</li>
+<li>内部静态类Node包含元素、前驱和后继节点</li>
+<li>支持从头部、尾部、任意位置添加、删除元素</li>
+</ol>
+<h2 id="对比">
+  对比
+  <a class="anchor" href="#%e5%af%b9%e6%af%94">#</a>
+</h2>
+<p>ArrayList是数组，LinkedList是链表</p>
+<ul>
+<li>基于数组的ArrayList，底层连续存储<br>
+知道第一个元素的位置就可以通过索引快速访问到后续元素，随机查找速度O(1)<br>
+删除数据和插入数据可能需要重排数据中的所有数据或者是更新索引，开销大O(n)<br>
+ArrayList需要扩容，每次扩容会备用一些没被使用的数组空间</li>
+<li>基于链表的LinkedList，底层可以离散存储<br>
+每个节点存储数据、前一个元素引用、后一个元素引用
+增删时不需要像数组那样重新计算大小或者更新索引，增删速度O(1)<br>
+查询需要逐个元素直到找到，效率低O(n)</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#arraylist">ArrayList</a></li>
+    <li><a href="#linkedlist">LinkedList</a></li>
+    <li><a href="#对比">对比</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

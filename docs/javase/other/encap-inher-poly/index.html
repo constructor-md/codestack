@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  封装|继承|多态
+  #
+
+
+  封装
+  #
+
+说明一个类的属性或行为与其他类的关系
+隐藏了类的内部实现机制，使得可以在不影响使用的情况下，改变类的内部结构，同时也保护了数据
+对于外界而言，内部细节被隐藏，暴露出来的仅是访问方法
+
+属性的封装：
+使用者只能通过事先定制好的方法来访问数据，可以方便地加入逻辑控制，限制对属性的不合理操作
+方法的封装：
+使用者按照既定的方式调用方法，不必关心方法的内部实现，便于使用、便于修改、增加代码的可维护性
+目标是实现低耦合，高内聚
+
+
+  继承
+  #
+
+从已有的类派生出新的类，新的类吸收已有类的数据属性和行为，并可以扩展新的能力
+本质上是特殊到一般的关系，即is-a关系
+子类继承父类，表明子类是一种特殊的父类，并具备父类不具有的一些属性或方法。
+从多种实现类中抽象出一个基类，使其具备多种实现类的共同特性，当实现类使用extends关键字继承了基类后，实现类就具备了这些相同的属性
+继承的类叫子类（派生类或超类），被继承的类叫做父类（或基类）
+Java通过extends关键字实现继承，父类中private定义的变量和方法不会被继承，不能在子类中直接操作父类通过private定义的变量以及方法。
+继承避免了对一般类和特殊类之间共同特征进行的重复描述，通过继承可以清晰地表达每一项共同特征所适应的概念范围。在一般类中定义的属性和操作
+适用于这个类本身和它以下的每一层特殊类的全部对象。
+运用继承原则使得系统模型清晰简练
+
+  多态
+  #
+
+指的是类与类之间的关系
+两个类之间由继承关系，存在方法的重写。于是可以在调用时由父类引用指向子类对象。
+多态必备三个要素：继承、重写、父类引用指向子类对象
+
+  为什么这些特性可以让我们写出更好的代码？
+  #
+
+
+封装：增加代码可复用性
+继承：增加代码可复用性，使得系统模型更加清晰，减少重复描述
+多态：增加代码灵活性，实现随便变，都可以通过统一的父类引用来调用实际对象方法
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/other/encap-inher-poly/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="封装|继承|多态">
+  <meta property="og:description" content="封装|继承|多态#封装#说明一个类的属性或行为与其他类的关系
+隐藏了类的内部实现机制，使得可以在不影响使用的情况下，改变类的内部结构，同时也保护了数据
+对于外界而言，内部细节被隐藏，暴露出来的仅是访问方法
+属性的封装：
+使用者只能通过事先定制好的方法来访问数据，可以方便地加入逻辑控制，限制对属性的不合理操作 方法的封装：
+使用者按照既定的方式调用方法，不必关心方法的内部实现，便于使用、便于修改、增加代码的可维护性
+目标是实现低耦合，高内聚 继承#从已有的类派生出新的类，新的类吸收已有类的数据属性和行为，并可以扩展新的能力
+本质上是特殊到一般的关系，即is-a关系
+子类继承父类，表明子类是一种特殊的父类，并具备父类不具有的一些属性或方法。
+从多种实现类中抽象出一个基类，使其具备多种实现类的共同特性，当实现类使用extends关键字继承了基类后，实现类就具备了这些相同的属性
+继承的类叫子类（派生类或超类），被继承的类叫做父类（或基类）
+Java通过extends关键字实现继承，父类中private定义的变量和方法不会被继承，不能在子类中直接操作父类通过private定义的变量以及方法。
+继承避免了对一般类和特殊类之间共同特征进行的重复描述，通过继承可以清晰地表达每一项共同特征所适应的概念范围。在一般类中定义的属性和操作
+适用于这个类本身和它以下的每一层特殊类的全部对象。
+运用继承原则使得系统模型清晰简练
+多态#指的是类与类之间的关系
+两个类之间由继承关系，存在方法的重写。于是可以在调用时由父类引用指向子类对象。
+多态必备三个要素：继承、重写、父类引用指向子类对象
+为什么这些特性可以让我们写出更好的代码？#封装：增加代码可复用性 继承：增加代码可复用性，使得系统模型更加清晰，减少重复描述 多态：增加代码灵活性，实现随便变，都可以通过统一的父类引用来调用实际对象方法">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>封装|继承|多态 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/other/encap-inher-poly/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="active">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>封装|继承|多态</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#封装">封装</a></li>
+    <li><a href="#继承">继承</a></li>
+    <li><a href="#多态">多态</a></li>
+    <li><a href="#为什么这些特性可以让我们写出更好的代码">为什么这些特性可以让我们写出更好的代码？</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="封装继承多态">
+  封装|继承|多态
+  <a class="anchor" href="#%e5%b0%81%e8%a3%85%e7%bb%a7%e6%89%bf%e5%a4%9a%e6%80%81">#</a>
+</h1>
+<h2 id="封装">
+  封装
+  <a class="anchor" href="#%e5%b0%81%e8%a3%85">#</a>
+</h2>
+<p>说明一个类的属性或行为与其他类的关系<br>
+隐藏了类的内部实现机制，使得可以在不影响使用的情况下，改变类的内部结构，同时也保护了数据<br>
+对于外界而言，内部细节被隐藏，暴露出来的仅是访问方法</p>
+<ul>
+<li>属性的封装：<br>
+使用者只能通过事先定制好的方法来访问数据，可以方便地加入逻辑控制，限制对属性的不合理操作</li>
+<li>方法的封装：<br>
+使用者按照既定的方式调用方法，不必关心方法的内部实现，便于使用、便于修改、增加代码的可维护性<br>
+目标是实现低耦合，高内聚</li>
+</ul>
+<h2 id="继承">
+  继承
+  <a class="anchor" href="#%e7%bb%a7%e6%89%bf">#</a>
+</h2>
+<p>从已有的类派生出新的类，新的类吸收已有类的数据属性和行为，并可以扩展新的能力<br>
+本质上是特殊到一般的关系，即is-a关系<br>
+子类继承父类，表明子类是一种特殊的父类，并具备父类不具有的一些属性或方法。<br>
+从多种实现类中抽象出一个基类，使其具备多种实现类的共同特性，当实现类使用extends关键字继承了基类后，实现类就具备了这些相同的属性<br>
+继承的类叫子类（派生类或超类），被继承的类叫做父类（或基类）<br>
+Java通过extends关键字实现继承，父类中private定义的变量和方法不会被继承，不能在子类中直接操作父类通过private定义的变量以及方法。<br>
+继承避免了对一般类和特殊类之间共同特征进行的重复描述，通过继承可以清晰地表达每一项共同特征所适应的概念范围。在一般类中定义的属性和操作<br>
+适用于这个类本身和它以下的每一层特殊类的全部对象。<br>
+运用继承原则使得系统模型清晰简练</p>
+<h2 id="多态">
+  多态
+  <a class="anchor" href="#%e5%a4%9a%e6%80%81">#</a>
+</h2>
+<p>指的是类与类之间的关系<br>
+两个类之间由继承关系，存在方法的重写。于是可以在调用时由父类引用指向子类对象。<br>
+多态必备三个要素：继承、重写、父类引用指向子类对象</p>
+<h2 id="为什么这些特性可以让我们写出更好的代码">
+  为什么这些特性可以让我们写出更好的代码？
+  <a class="anchor" href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e8%bf%99%e4%ba%9b%e7%89%b9%e6%80%a7%e5%8f%af%e4%bb%a5%e8%ae%a9%e6%88%91%e4%bb%ac%e5%86%99%e5%87%ba%e6%9b%b4%e5%a5%bd%e7%9a%84%e4%bb%a3%e7%a0%81">#</a>
+</h2>
+<ul>
+<li>封装：增加代码可复用性</li>
+<li>继承：增加代码可复用性，使得系统模型更加清晰，减少重复描述</li>
+<li>多态：增加代码灵活性，实现随便变，都可以通过统一的父类引用来调用实际对象方法</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#封装">封装</a></li>
+    <li><a href="#继承">继承</a></li>
+    <li><a href="#多态">多态</a></li>
+    <li><a href="#为什么这些特性可以让我们写出更好的代码">为什么这些特性可以让我们写出更好的代码？</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,24 +1,89 @@
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
-<head><script src="/codestack/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=codestack/livereload" data-no-instant defer></script>
+<head>
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="">
+<meta name="description" content="
+  HashMap
+  #
+
+
+  数据结构
+  #
+
+
+JDK1.7之前，采用数组&#43;链表
+JDK1.8之后，数组&#43;链表&#43;红黑树
+当链表长度大于阈值或者红黑树的边界值，默认为8，且数组长度大于64时，该索引位置的数据改为红黑树存储
+如果数组长度不够64，则执行扩容。数组长度较小时换为红黑树，反而会降低效率。因为红黑树需要左旋右旋变色等操作来保持平衡
+
+
+  哈希表底层的hash算法
+  #
+
+采用key的hashcode值，结合数组长度进行无符号右移，按位异或，按位与计算出索引
+还可以采用平方取中，取余数，伪随机数法。但位运算效率较高
+
+  哈希表的存储和查询
+  #
+
+存储时，根据hash算法计算出索引位置，找到指定位置存储
+以String为例，如果位置上已经有元素，则equals判断元素是否相等，相等则替换 
+不相等则在该位置形成链表，数据变为链表上的一个节点。以解决哈希碰撞问题
+
+  哈希扩容
+  #
+
+当元素个数超过数组大小*负载因子（默认0.75）时进行扩容，扩大一倍
+扩容时需要rehash，但是方式比较巧妙，由于每次扩容都是翻倍，所以rehash相当于将原来的位置&#43;旧容量就得到新的位置，没有再计算hash值
+但是新的键值进入仍进行了hash
+
+  常见hash算法的原理：
+  #
+
+
+平方取中法：取关键字平方后中间几位作为散列地址
+直接寻址法：取关键字或关键字的某个线性函数值作为散列地址
+数字分析法：分析数据，如果是日期，发现年月日前几位数字大致相同，出现冲突几率大。你那月日的后几位月份和具体日期差别大，考虑用后面则冲突几率降低。即找规律用低碰撞的数据构造冲突几率低的散列地址
+折叠法：关键字分割成位数相同的几部分，最后一部分位数可以不同。取这几部分的叠加和（去除进位）作为散列地址
+随机数法：选择一个随机函数，取关键字的随机值作为散列地址，用于关键字长度不同的场合
+除留余数法：取关键字某个不大于散列表表长m的数p除后得到余数作为散列地址。p一般取素数或m，如果p选的不好容易产生随机值
+
+
+  处理冲突的方法
+  #
+
+
+开放寻址法
+拉链法
+再散列法
+公共溢出区
+">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="http://localhost:1313/codestack/docs/javase/collection/HashMap/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/collection/hashmap/">
   <meta property="og:site_name" content="CodeStack">
-  <meta property="og:title" content="CodeStack">
+  <meta property="og:title" content="HashMap">
+  <meta property="og:description" content="HashMap#数据结构#JDK1.7之前，采用数组&#43;链表 JDK1.8之后，数组&#43;链表&#43;红黑树 当链表长度大于阈值或者红黑树的边界值，默认为8，且数组长度大于64时，该索引位置的数据改为红黑树存储
+如果数组长度不够64，则执行扩容。数组长度较小时换为红黑树，反而会降低效率。因为红黑树需要左旋右旋变色等操作来保持平衡 哈希表底层的hash算法#采用key的hashcode值，结合数组长度进行无符号右移，按位异或，按位与计算出索引
+还可以采用平方取中，取余数，伪随机数法。但位运算效率较高
+哈希表的存储和查询#存储时，根据hash算法计算出索引位置，找到指定位置存储
+以String为例，如果位置上已经有元素，则equals判断元素是否相等，相等则替换 不相等则在该位置形成链表，数据变为链表上的一个节点。以解决哈希碰撞问题
+哈希扩容#当元素个数超过数组大小*负载因子（默认0.75）时进行扩容，扩大一倍
+扩容时需要rehash，但是方式比较巧妙，由于每次扩容都是翻倍，所以rehash相当于将原来的位置&#43;旧容量就得到新的位置，没有再计算hash值
+但是新的键值进入仍进行了hash
+常见hash算法的原理：#平方取中法：取关键字平方后中间几位作为散列地址 直接寻址法：取关键字或关键字的某个线性函数值作为散列地址 数字分析法：分析数据，如果是日期，发现年月日前几位数字大致相同，出现冲突几率大。你那月日的后几位月份和具体日期差别大，考虑用后面则冲突几率降低。即找规律用低碰撞的数据构造冲突几率低的散列地址 折叠法：关键字分割成位数相同的几部分，最后一部分位数可以不同。取这几部分的叠加和（去除进位）作为散列地址 随机数法：选择一个随机函数，取关键字的随机值作为散列地址，用于关键字长度不同的场合 除留余数法：取关键字某个不大于散列表表长m的数p除后得到余数作为散列地址。p一般取素数或m，如果p选的不好容易产生随机值 处理冲突的方法#开放寻址法 拉链法 再散列法 公共溢出区">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
-<title>Index | CodeStack</title>
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>HashMap | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="http://localhost:1313/codestack/docs/javase/collection/HashMap/">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/collection/hashmap/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
-  <script defer src="/codestack/en.search.min.732e23c5403814f0d6bb407da7c1caef8d216259b8399701ee0d17354e81f696.js" integrity="sha256-cy4jxUA4FPDWu0B9p8HK740hYlm4OZcB7g0XNU6B9pY=" crossorigin="anonymous"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
 <!--
 Made with Book Theme
 https://github.com/alex-shpak/hugo-book
@@ -70,25 +135,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/architecture/" class="">Architecture</a>
-  
-
-          
-  <ul>
-    
-  </ul>
-
-        </li>
-      
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/" class="">Basic</a>
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
   
 
           
@@ -101,7 +148,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/basic/algo/" class="">Algo</a>
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
   
 
           
@@ -114,11 +161,11 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/basic/algo/search/" class="">Index</a>
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
   
 
-        </li>
-      
+          
+  <ul>
     
       
         <li>
@@ -127,7 +174,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/basic/algo/sort/" class="">Index</a>
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
   
 
         </li>
@@ -145,7 +192,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/basic/net/" class="">Net</a>
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
   
 
           
@@ -158,95 +205,10 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/basic/net/application/" class="">Application</a>
-  
-
-          
-  <ul>
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/net/application/http/" class="">Index</a>
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
   
 
         </li>
-      
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/net/application/https/" class="">Index</a>
-  
-
-        </li>
-      
-    
-  </ul>
-
-        </li>
-      
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/net/datalink/" class="">Index</a>
-  
-
-        </li>
-      
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/net/network/" class="">Index</a>
-  
-
-        </li>
-      
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/net/physical/" class="">Index</a>
-  
-
-        </li>
-      
-    
-      
-        <li>
-          
-  
-  
-
-  
-    <a href="/codestack/docs/basic/net/transport/" class="">Transport</a>
-  
-
-          
-  <ul>
-    
       
     
   </ul>
@@ -271,14 +233,36 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/" class="">Javaee</a>
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
   
 
           
   <ul>
     
       
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
     
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
       
     
       
@@ -288,13 +272,203 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <span>Spring</span>
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
   
 
           
   <ul>
     
       
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
     
   </ul>
 
@@ -313,7 +487,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javase/" class="">Javase</a>
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
   
 
           
@@ -326,12 +500,75 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javase/collection/" class="">Collection</a>
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
   
 
           
   <ul>
     
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
       
     
   </ul>
@@ -340,7 +577,514 @@ https://github.com/alex-shpak/hugo-book
       
     
       
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
     
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="active">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
       
     
   </ul>
@@ -383,7 +1127,7 @@ https://github.com/alex-shpak/hugo-book
     <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <h3>Index</h3>
+  <h3>HashMap</h3>
 
   <label for="toc-control">
     
@@ -397,7 +1141,15 @@ https://github.com/alex-shpak/hugo-book
   <aside class="hidden clearfix">
     
   
-<nav id="TableOfContents"></nav>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#哈希表底层的hash算法">哈希表底层的hash算法</a></li>
+    <li><a href="#哈希表的存储和查询">哈希表的存储和查询</a></li>
+    <li><a href="#哈希扩容">哈希扩容</a></li>
+    <li><a href="#常见hash算法的原理">常见hash算法的原理：</a></li>
+  </ul>
+</nav>
 
 
 
@@ -408,7 +1160,63 @@ https://github.com/alex-shpak/hugo-book
 
       
       
-  <article class="markdown book-article"></article>
+  <article class="markdown book-article"><h1 id="hashmap">
+  HashMap
+  <a class="anchor" href="#hashmap">#</a>
+</h1>
+<h2 id="数据结构">
+  数据结构
+  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84">#</a>
+</h2>
+<ul>
+<li>JDK1.7之前，采用数组+链表</li>
+<li>JDK1.8之后，数组+链表+红黑树
+当链表长度大于阈值或者红黑树的边界值，默认为8，且数组长度大于64时，该索引位置的数据改为红黑树存储<br>
+如果数组长度不够64，则执行扩容。数组长度较小时换为红黑树，反而会降低效率。因为红黑树需要左旋右旋变色等操作来保持平衡</li>
+</ul>
+<h2 id="哈希表底层的hash算法">
+  哈希表底层的hash算法
+  <a class="anchor" href="#%e5%93%88%e5%b8%8c%e8%a1%a8%e5%ba%95%e5%b1%82%e7%9a%84hash%e7%ae%97%e6%b3%95">#</a>
+</h2>
+<p>采用key的hashcode值，结合数组长度进行无符号右移，按位异或，按位与计算出索引<br>
+还可以采用平方取中，取余数，伪随机数法。但位运算效率较高</p>
+<h2 id="哈希表的存储和查询">
+  哈希表的存储和查询
+  <a class="anchor" href="#%e5%93%88%e5%b8%8c%e8%a1%a8%e7%9a%84%e5%ad%98%e5%82%a8%e5%92%8c%e6%9f%a5%e8%af%a2">#</a>
+</h2>
+<p>存储时，根据hash算法计算出索引位置，找到指定位置存储<br>
+以String为例，如果位置上已经有元素，则equals判断元素是否相等，相等则替换 <br>
+不相等则在该位置形成链表，数据变为链表上的一个节点。以解决哈希碰撞问题</p>
+<h2 id="哈希扩容">
+  哈希扩容
+  <a class="anchor" href="#%e5%93%88%e5%b8%8c%e6%89%a9%e5%ae%b9">#</a>
+</h2>
+<p>当元素个数超过数组大小*负载因子（默认0.75）时进行扩容，扩大一倍<br>
+扩容时需要rehash，但是方式比较巧妙，由于每次扩容都是翻倍，所以rehash相当于将原来的位置+旧容量就得到新的位置，没有再计算hash值<br>
+但是新的键值进入仍进行了hash</p>
+<h2 id="常见hash算法的原理">
+  常见hash算法的原理：
+  <a class="anchor" href="#%e5%b8%b8%e8%a7%81hash%e7%ae%97%e6%b3%95%e7%9a%84%e5%8e%9f%e7%90%86">#</a>
+</h2>
+<ol>
+<li>平方取中法：取关键字平方后中间几位作为散列地址</li>
+<li>直接寻址法：取关键字或关键字的某个线性函数值作为散列地址</li>
+<li>数字分析法：分析数据，如果是日期，发现年月日前几位数字大致相同，出现冲突几率大。你那月日的后几位月份和具体日期差别大，考虑用后面则冲突几率降低。即找规律用低碰撞的数据构造冲突几率低的散列地址</li>
+<li>折叠法：关键字分割成位数相同的几部分，最后一部分位数可以不同。取这几部分的叠加和（去除进位）作为散列地址</li>
+<li>随机数法：选择一个随机函数，取关键字的随机值作为散列地址，用于关键字长度不同的场合</li>
+<li>除留余数法：取关键字某个不大于散列表表长m的数p除后得到余数作为散列地址。p一般取素数或m，如果p选的不好容易产生随机值</li>
+</ol>
+<h1 id="处理冲突的方法">
+  处理冲突的方法
+  <a class="anchor" href="#%e5%a4%84%e7%90%86%e5%86%b2%e7%aa%81%e7%9a%84%e6%96%b9%e6%b3%95">#</a>
+</h1>
+<ol>
+<li>开放寻址法</li>
+<li>拉链法</li>
+<li>再散列法</li>
+<li>公共溢出区</li>
+</ol>
+</article>
  
       
 
@@ -416,6 +1224,12 @@ https://github.com/alex-shpak/hugo-book
         
   <div class="flex flex-wrap justify-between">
 
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
 
 
 
@@ -433,6 +1247,10 @@ https://github.com/alex-shpak/hugo-book
 
       
   
+  <div class="book-comments">
+
+</div>
+  
  
 
       <label for="menu-control" class="hidden book-menu-overlay"></label>
@@ -443,7 +1261,15 @@ https://github.com/alex-shpak/hugo-book
       <div class="book-toc-content">
         
   
-<nav id="TableOfContents"></nav>
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#数据结构">数据结构</a></li>
+    <li><a href="#哈希表底层的hash算法">哈希表底层的hash算法</a></li>
+    <li><a href="#哈希表的存储和查询">哈希表的存储和查询</a></li>
+    <li><a href="#哈希扩容">哈希扩容</a></li>
+    <li><a href="#常见hash算法的原理">常见hash算法的原理：</a></li>
+  </ul>
+</nav>
 
 
  

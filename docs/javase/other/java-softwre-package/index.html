@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  JDK|JRE|JVM
+  #
+
+
+  JVM：
+  #
+
+Java 虚拟机，Java 程序能够跨平台运行的核心
+
+所有的 Java 程序都会被编译为.class 的类文件，同代码在任何平台上编译字节码都相同
+.class 文件在虚拟机上运行，由虚拟机将字节码解释给本地系统执行
+
+
+  JRE：
+  #
+
+Java 运行时环境，即 Java 程序必须在 JRE 上运行
+
+包含 JVM 和 Java 核心类库
+JVM 不能直接执行 class，还需要 Java 核心类库来解释 class
+安装 jre 后有 bin 和 lib 两个文件夹，可简单理解为分别是 JVM 和 Lib
+
+
+  JDK：
+  #
+
+Java 开发工具包，包括 JRE、Java 工具、编译器和调试器组成
+自带工具：
+
+java：Java 运行工具，运行.class 或 jar 包
+javac: Java 编译工具，将 Java 源代码编译为字节码
+javap: Java 反编译工具，将 Java 字节码反汇编为源代码
+jmap：Java 内存映射工具，打印执行 Java 进程、核心文件或远程调试服务器的配置信息
+jps: Java 进程状态工具，显示目标系统上的 HotSpot JVM 的 Java 进程信息
+jinfo: Java 配置信息工具，用于打印指定 Java 进程、核心文件或远程调试服务器的配置信息
+jstack: Java 堆栈跟踪工具，用于打印 Java 进程、核心为念 u 哦远程调试服务器的 Java 现成的堆栈跟踪信息
+jvisualvm: Java 可视化 JVM 检测、故障分析工具。图形化界面提供指定虚拟机的 Java 应用程序的详细信息
+jconsole：图形化界面的检测工具，监测并显示 Java 平台上的应用程序的性能和资源占用等信息
+javadoc: Java 文档工具，根据源代码中的注释信息生成 HTML 格式的 API 帮助文档
+
+
+  三者的关系：
+  #
+
+
+JDK 包含 JRE、JRE 包含 JVM
+JVM 不能单独搞定 class 的执行，解释 class 需要使用 JRE 中的 Java 核心类库 lib
+我们利用 JDK 开发 Java 源程序，通过 JDK 提供的 javac 编译程序将源程序编译成 Java 字节码，在 JVM 使用 JRE 的 lib 解释这些字节码，映射到 CPU 指令集或 OS 的系统调用
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/other/java-softwre-package/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="JDK|JRE|JVM">
+  <meta property="og:description" content="JDK|JRE|JVM#JVM：#Java 虚拟机，Java 程序能够跨平台运行的核心
+所有的 Java 程序都会被编译为.class 的类文件，同代码在任何平台上编译字节码都相同 .class 文件在虚拟机上运行，由虚拟机将字节码解释给本地系统执行 JRE：#Java 运行时环境，即 Java 程序必须在 JRE 上运行
+包含 JVM 和 Java 核心类库 JVM 不能直接执行 class，还需要 Java 核心类库来解释 class 安装 jre 后有 bin 和 lib 两个文件夹，可简单理解为分别是 JVM 和 Lib JDK：#Java 开发工具包，包括 JRE、Java 工具、编译器和调试器组成
+自带工具：
+java：Java 运行工具，运行.class 或 jar 包 javac: Java 编译工具，将 Java 源代码编译为字节码 javap: Java 反编译工具，将 Java 字节码反汇编为源代码 jmap：Java 内存映射工具，打印执行 Java 进程、核心文件或远程调试服务器的配置信息 jps: Java 进程状态工具，显示目标系统上的 HotSpot JVM 的 Java 进程信息 jinfo: Java 配置信息工具，用于打印指定 Java 进程、核心文件或远程调试服务器的配置信息 jstack: Java 堆栈跟踪工具，用于打印 Java 进程、核心为念 u 哦远程调试服务器的 Java 现成的堆栈跟踪信息 jvisualvm: Java 可视化 JVM 检测、故障分析工具。图形化界面提供指定虚拟机的 Java 应用程序的详细信息 jconsole：图形化界面的检测工具，监测并显示 Java 平台上的应用程序的性能和资源占用等信息 javadoc: Java 文档工具，根据源代码中的注释信息生成 HTML 格式的 API 帮助文档 三者的关系：#JDK 包含 JRE、JRE 包含 JVM JVM 不能单独搞定 class 的执行，解释 class 需要使用 JRE 中的 Java 核心类库 lib 我们利用 JDK 开发 Java 源程序，通过 JDK 提供的 javac 编译程序将源程序编译成 Java 字节码，在 JVM 使用 JRE 的 lib 解释这些字节码，映射到 CPU 指令集或 OS 的系统调用">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>JDK|JRE|JVM | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/other/java-softwre-package/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="active">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>JDK|JRE|JVM</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#jvm">JVM：</a></li>
+    <li><a href="#jre">JRE：</a></li>
+    <li><a href="#jdk">JDK：</a></li>
+    <li><a href="#三者的关系">三者的关系：</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="jdkjrejvm">
+  JDK|JRE|JVM
+  <a class="anchor" href="#jdkjrejvm">#</a>
+</h1>
+<h2 id="jvm">
+  JVM：
+  <a class="anchor" href="#jvm">#</a>
+</h2>
+<p>Java 虚拟机，Java 程序能够跨平台运行的核心</p>
+<ul>
+<li>所有的 Java 程序都会被编译为.class 的类文件，同代码在任何平台上编译字节码都相同</li>
+<li>.class 文件在虚拟机上运行，由虚拟机将字节码解释给本地系统执行</li>
+</ul>
+<h2 id="jre">
+  JRE：
+  <a class="anchor" href="#jre">#</a>
+</h2>
+<p>Java 运行时环境，即 Java 程序必须在 JRE 上运行</p>
+<ul>
+<li>包含 JVM 和 Java 核心类库</li>
+<li>JVM 不能直接执行 class，还需要 Java 核心类库来解释 class</li>
+<li>安装 jre 后有 bin 和 lib 两个文件夹，可简单理解为分别是 JVM 和 Lib</li>
+</ul>
+<h2 id="jdk">
+  JDK：
+  <a class="anchor" href="#jdk">#</a>
+</h2>
+<p>Java 开发工具包，包括 JRE、Java 工具、编译器和调试器组成<br>
+自带工具：</p>
+<ol>
+<li>java：Java 运行工具，运行.class 或 jar 包</li>
+<li>javac: Java 编译工具，将 Java 源代码编译为字节码</li>
+<li>javap: Java 反编译工具，将 Java 字节码反汇编为源代码</li>
+<li>jmap：Java 内存映射工具，打印执行 Java 进程、核心文件或远程调试服务器的配置信息</li>
+<li>jps: Java 进程状态工具，显示目标系统上的 HotSpot JVM 的 Java 进程信息</li>
+<li>jinfo: Java 配置信息工具，用于打印指定 Java 进程、核心文件或远程调试服务器的配置信息</li>
+<li>jstack: Java 堆栈跟踪工具，用于打印 Java 进程、核心为念 u 哦远程调试服务器的 Java 现成的堆栈跟踪信息</li>
+<li>jvisualvm: Java 可视化 JVM 检测、故障分析工具。图形化界面提供指定虚拟机的 Java 应用程序的详细信息</li>
+<li>jconsole：图形化界面的检测工具，监测并显示 Java 平台上的应用程序的性能和资源占用等信息</li>
+<li>javadoc: Java 文档工具，根据源代码中的注释信息生成 HTML 格式的 API 帮助文档</li>
+</ol>
+<h2 id="三者的关系">
+  三者的关系：
+  <a class="anchor" href="#%e4%b8%89%e8%80%85%e7%9a%84%e5%85%b3%e7%b3%bb">#</a>
+</h2>
+<ul>
+<li>JDK 包含 JRE、JRE 包含 JVM</li>
+<li>JVM 不能单独搞定 class 的执行，解释 class 需要使用 JRE 中的 Java 核心类库 lib</li>
+<li>我们利用 JDK 开发 Java 源程序，通过 JDK 提供的 javac 编译程序将源程序编译成 Java 字节码，在 JVM 使用 JRE 的 lib 解释这些字节码，映射到 CPU 指令集或 OS 的系统调用</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#jvm">JVM：</a></li>
+    <li><a href="#jre">JRE：</a></li>
+    <li><a href="#jdk">JDK：</a></li>
+    <li><a href="#三者的关系">三者的关系：</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

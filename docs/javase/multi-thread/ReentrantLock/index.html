@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  ReentrantLock
+  #
+
+
+  介绍
+  #
+
+JDK5时，没有synchronized优化，该关键字加锁是个比较重的操作
+J.U.C.locks.Lock接口提供了基于类的全新互斥手段，后续扩展出了不同调度算法、不同特征、不同性能不同于一的各种锁
+重入锁（ReentrantLock）是Lock的最常见实现，是可重入的
+基本用法和synchronized相似，相比synchronized主要增加了三个高级功能：
+
+等待可中断
+持锁线程长期不释放锁，正在等待的线程可以放弃等待，改为处理其他事情
+公平锁
+多个线程等待同个锁时，必须按照申请所得时间顺序来依次获得锁
+非公平锁在锁什邡市，任何等锁线程都能有机会获得锁
+synchronized是非公平的，ReentrantLock默认也是非公平，但是可以通过布尔参数改为公平锁
+使用公平锁后ReentrantLock性能急剧下降，影响吞吐量
+锁绑定多个条件
+一个ReentrantLock可以绑定多个Condition对象
+synchronized中，锁对象的wait、notify或notifyAll方法配合可以实现一个隐含条件，但是如果要和多于一个的条件关联，则必须额外添加锁
+但ReentrantLock则多次调用newCondition即可
+
+
+  锁释放
+  #
+
+使用Lock需要保证在Finally块中释放锁，否则抛出异常后可能永远不会释放锁
+synchronized则由虚拟机保证锁的正常释放
+
+  基本实现原理
+  #
+
+Lock接口的实现内部封装了一个AQS同步队列
+AQS同步队列支持先进先出，数据结构为双向链表，维护头尾指针，方便从任意一个位置访问前后节点
+线程如果得锁失败，就会被封装成Node进入等锁队列
+当获取锁的线程释放锁，就从队列中取出一个节点唤醒线程
+一个线程得锁失败，则加入队列尾，通过尾结点指针对接队列尾
+通过CAS将tail指向新的尾节点
+一个线程释放锁，唤醒后继节点，后继节点得锁成功后，会把自己设为队列头节点
+设置头节点不需要用CAS，因为设置头节点是获取锁的线程来完成
+同步锁只能由一个线程获取，所以不需要CAS保证
+ReentraintLock锁对象，通过CAS进行加锁，如果加锁失败，则走锁竞争的逻辑
+加锁成功则走加锁成功逻辑
+加锁成功后，会设置state属性值，支持可重入，同个每次加锁state值加一，解锁则减一，如果state值大一0，说明此时有线程持有锁，=0则是五锁状态
+
+  公平/非公平锁
+  #
+
+公平锁就是锁释放后唤醒后继节点获得锁 
+非公平锁就是唤醒全部线程，让他们都CAS一下，谁成功谁就得锁，不成功就进入队列等待下一次">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/multi-thread/ReentrantLock/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="ReentrantLock">
+  <meta property="og:description" content="ReentrantLock#介绍#JDK5时，没有synchronized优化，该关键字加锁是个比较重的操作
+J.U.C.locks.Lock接口提供了基于类的全新互斥手段，后续扩展出了不同调度算法、不同特征、不同性能不同于一的各种锁
+重入锁（ReentrantLock）是Lock的最常见实现，是可重入的
+基本用法和synchronized相似，相比synchronized主要增加了三个高级功能：
+等待可中断
+持锁线程长期不释放锁，正在等待的线程可以放弃等待，改为处理其他事情 公平锁
+多个线程等待同个锁时，必须按照申请所得时间顺序来依次获得锁
+非公平锁在锁什邡市，任何等锁线程都能有机会获得锁
+synchronized是非公平的，ReentrantLock默认也是非公平，但是可以通过布尔参数改为公平锁
+使用公平锁后ReentrantLock性能急剧下降，影响吞吐量 锁绑定多个条件
+一个ReentrantLock可以绑定多个Condition对象
+synchronized中，锁对象的wait、notify或notifyAll方法配合可以实现一个隐含条件，但是如果要和多于一个的条件关联，则必须额外添加锁
+但ReentrantLock则多次调用newCondition即可 锁释放#使用Lock需要保证在Finally块中释放锁，否则抛出异常后可能永远不会释放锁
+synchronized则由虚拟机保证锁的正常释放
+基本实现原理#Lock接口的实现内部封装了一个AQS同步队列
+AQS同步队列支持先进先出，数据结构为双向链表，维护头尾指针，方便从任意一个位置访问前后节点
+线程如果得锁失败，就会被封装成Node进入等锁队列
+当获取锁的线程释放锁，就从队列中取出一个节点唤醒线程
+一个线程得锁失败，则加入队列尾，通过尾结点指针对接队列尾
+通过CAS将tail指向新的尾节点
+一个线程释放锁，唤醒后继节点，后继节点得锁成功后，会把自己设为队列头节点
+设置头节点不需要用CAS，因为设置头节点是获取锁的线程来完成
+同步锁只能由一个线程获取，所以不需要CAS保证
+ReentraintLock锁对象，通过CAS进行加锁，如果加锁失败，则走锁竞争的逻辑
+加锁成功则走加锁成功逻辑
+加锁成功后，会设置state属性值，支持可重入，同个每次加锁state值加一，解锁则减一，如果state值大一0，说明此时有线程持有锁，=0则是五锁状态
+公平/非公平锁#公平锁就是锁释放后唤醒后继节点获得锁 非公平锁就是唤醒全部线程，让他们都CAS一下，谁成功谁就得锁，不成功就进入队列等待下一次">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>ReentrantLock | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/multi-thread/ReentrantLock/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="active">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>ReentrantLock</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#锁释放">锁释放</a></li>
+    <li><a href="#基本实现原理">基本实现原理</a></li>
+    <li><a href="#公平非公平锁">公平/非公平锁</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="reentrantlock">
+  ReentrantLock
+  <a class="anchor" href="#reentrantlock">#</a>
+</h1>
+<h2 id="介绍">
+  介绍
+  <a class="anchor" href="#%e4%bb%8b%e7%bb%8d">#</a>
+</h2>
+<p>JDK5时，没有synchronized优化，该关键字加锁是个比较重的操作<br>
+J.U.C.locks.Lock接口提供了基于类的全新互斥手段，后续扩展出了不同调度算法、不同特征、不同性能不同于一的各种锁</p>
+<p>重入锁（ReentrantLock）是Lock的最常见实现，是可重入的<br>
+基本用法和synchronized相似，相比synchronized主要增加了三个高级功能：</p>
+<ol>
+<li>等待可中断<br>
+持锁线程长期不释放锁，正在等待的线程可以放弃等待，改为处理其他事情</li>
+<li>公平锁<br>
+多个线程等待同个锁时，必须按照申请所得时间顺序来依次获得锁<br>
+非公平锁在锁什邡市，任何等锁线程都能有机会获得锁<br>
+synchronized是非公平的，ReentrantLock默认也是非公平，但是可以通过布尔参数改为公平锁<br>
+使用公平锁后ReentrantLock性能急剧下降，影响吞吐量</li>
+<li>锁绑定多个条件<br>
+一个ReentrantLock可以绑定多个Condition对象<br>
+synchronized中，锁对象的wait、notify或notifyAll方法配合可以实现一个隐含条件，但是如果要和多于一个的条件关联，则必须额外添加锁<br>
+但ReentrantLock则多次调用newCondition即可</li>
+</ol>
+<h2 id="锁释放">
+  锁释放
+  <a class="anchor" href="#%e9%94%81%e9%87%8a%e6%94%be">#</a>
+</h2>
+<p>使用Lock需要保证在Finally块中释放锁，否则抛出异常后可能永远不会释放锁<br>
+synchronized则由虚拟机保证锁的正常释放</p>
+<h2 id="基本实现原理">
+  基本实现原理
+  <a class="anchor" href="#%e5%9f%ba%e6%9c%ac%e5%ae%9e%e7%8e%b0%e5%8e%9f%e7%90%86">#</a>
+</h2>
+<p>Lock接口的实现内部封装了一个AQS同步队列<br>
+AQS同步队列支持先进先出，数据结构为双向链表，维护头尾指针，方便从任意一个位置访问前后节点<br>
+线程如果得锁失败，就会被封装成Node进入等锁队列<br>
+当获取锁的线程释放锁，就从队列中取出一个节点唤醒线程</p>
+<p>一个线程得锁失败，则加入队列尾，通过尾结点指针对接队列尾<br>
+通过CAS将tail指向新的尾节点<br>
+一个线程释放锁，唤醒后继节点，后继节点得锁成功后，会把自己设为队列头节点<br>
+设置头节点不需要用CAS，因为设置头节点是获取锁的线程来完成<br>
+同步锁只能由一个线程获取，所以不需要CAS保证</p>
+<p>ReentraintLock锁对象，通过CAS进行加锁，如果加锁失败，则走锁竞争的逻辑<br>
+加锁成功则走加锁成功逻辑</p>
+<p>加锁成功后，会设置state属性值，支持可重入，同个每次加锁state值加一，解锁则减一，如果state值大一0，说明此时有线程持有锁，=0则是五锁状态</p>
+<h2 id="公平非公平锁">
+  公平/非公平锁
+  <a class="anchor" href="#%e5%85%ac%e5%b9%b3%e9%9d%9e%e5%85%ac%e5%b9%b3%e9%94%81">#</a>
+</h2>
+<p>公平锁就是锁释放后唤醒后继节点获得锁 <br>
+非公平锁就是唤醒全部线程，让他们都CAS一下，谁成功谁就得锁，不成功就进入队列等待下一次</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#介绍">介绍</a></li>
+    <li><a href="#锁释放">锁释放</a></li>
+    <li><a href="#基本实现原理">基本实现原理</a></li>
+    <li><a href="#公平非公平锁">公平/非公平锁</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

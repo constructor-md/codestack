@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  Java中线程的实现
+  #
+
+
+  线程与进程
+  #
+
+线程是比进程更加轻量级的调度执行单位，引入线程可以将进程的资源分配和执行调度分开，各个线程共享进程的资源，又可以独立调度
+线程是Java中处理器资源调度的最基本单位
+
+  Java线程的实现
+  #
+
+Thread对象内的许多关键方法都被声明为native
+native方法意味着这个方法没有使用或无法使用平台无关的手段来实现，即，Java线程的实现依赖于平台对线程的实现
+以HotSpot为例，每一个Java线程都是直接映射到一个操作系统原生线程来实现，中间没有额外的间接结构
+HotSpot自身不会干涉线程调度，只能设置优先级给操作系统提供调度建议，全权交给操作系统处理
+什么时候冻结/唤醒/停止线程、该给线程分配多少处理器执行时间、线程分配给哪个处理器执行，都是操作系统完成，操作系统全权决定
+
+  Java线程调度：
+  #
+
+线程调度指Java为线程分配处理器使用权的过程。
+两种调度方式：协同式调度、抢占式调度
+Java使用的线程调度方式为抢占式调度
+
+每个线程都是由系统分配执行时间，线程的切换线程自己不能决定。不会出现一个线程导致整个进程或系统阻塞的问题。
+Thread::yield方法主动让出执行时间，但是不能主动获取执行时间
+Java只能建议操作系统给一些线程分配多一点执行时间，另一些少一点。通过设置优先级来完成
+Java一共设置了十个级别的优先级，两个线程同时处于Ready状态时，优先级高的容易被同选择执行
+操作系统仍是全权掌握决定权，甚至可以更改优先级。我们无法在程序中准确判断一组状态都为Ready的线程哪一个会先执行。
+
+
+  Java线程状态转换
+  #
+
+Java语言定义了线程的六种状态：
+
+新建
+创建后尚未start的线程
+运行
+线程有可能在执行，有可能在等待操作系统分配执行时间
+无限期等待
+该状态的线程不会被分配处理器执行时间，必须等待其他线程显式唤醒
+如Thread.Join()，object.wait()的不设置Timeout的方法
+唤醒方法如notify()
+限期等待
+等待期间不会被分配处理器调度时间，但是不需要其他线程显式唤醒，一定时间后系统会自动唤醒
+如sleep，有参的wait、join等方法
+阻塞
+阻塞状态是在等待获取一个排他锁，将在另一个线程放弃一个排他锁时发生
+等待则是等待唤醒动作的出现
+结束
+已终止的线程状态，线程结束执行
+
+
+  wait和notify/notifyAll
+  #
+
+
+wait和notify/notifyAll方法是Object对象的实例方法
+
+// 对象锁
+private static final Object lock = new Object();
+private static int count = 0;
+
+// 生产者
+public static void producer() {
+    synchronized (lock) {
+        count&#43;&#43;;
+        System.out.println(&#34;生产数据，count=&#34; &#43; count);
+        lock.notify(); // 唤醒消费者
+    }
+}
+
+// 消费者
+public static void consumer() {
+    synchronized (lock) {
+        while (count == 0) {
+            try {
+                System.out.println(&#34;等待数据...&#34;);
+                lock.wait(); // 释放锁并等待
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        count--;
+        System.out.println(&#34;消费数据，count=&#34; &#43; count);
+    }
+}
+
+wait方法必须在sychronized同步代码块下使用，否则会报错
+wait() 让线程释放锁并进入等待状态，需通过 同一对象的 notify()/notifyAll() 唤醒。
+notify() 只能唤醒在该对象锁上等待的线程，且唤醒后线程需重新竞争锁
+wait()和notify()/notifyAll()必须成对出现
+没有 notify()，wait() 线程会一直阻塞；
+没有 wait()，notify() 会被忽略（无等待线程时调用 notify() 无副作用）
+
+
+  Thread.sleep(long millis)
+  #
+
+
+Thread类的静态方法
+让线程等待一段时间后继续执行，不需要显式环境
+
+try {
+    Thread.sleep(1000);
+} catch (InterruptedException e) {
+    e.printStackTrace();
+}
+
+  thread.join()
+  #
+
+
+Thread对象的实例方法
+等待线程执行结束
+让主线程等待该线程执行完毕后再继续执行
+
+Thread thread = new Thread(() -&gt; {
+    try {
+        Thread.sleep(2000);
+        System.out.println(&#34;子线程执行完毕&#34;);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+});
+
+thread.start();
+System.out.println(&#34;主线程等待子线程结束...&#34;);
+thread.join(); // 主线程阻塞，直到子线程结束
+System.out.println(&#34;主线程继续执行&#34;);
+
+  Thread.yield()
+  #
+
+
+Thread 类的静态方法
+主动让出当前线程的CPU资源，让当前线程从 运行状态 转为 就绪状态，允许其他同优先级线程抢占 CPU
+不释放锁，也不阻塞线程，仅提示调度器重新分配资源。
+无法保证一定生效（调度器可能忽略 yield() 请求）
+可以用于测试线程优先级等（强制触发线程上下文切换）
+
+Thread highPriorityThread = new Thread(() -&gt; {
+    for (int i = 0; i &lt; 3; i&#43;&#43;) {
+        System.out.println(&#34;高优先级线程执行：&#34; &#43; i);
+        Thread.yield(); // 主动让出 CPU，观察低优先级线程是否能执行
+    }
+});
+highPriorityThread.setPriority(Thread.MAX_PRIORITY);
+
+Thread lowPriorityThread = new Thread(() -&gt; {
+    for (int i = 0; i &lt; 3; i&#43;&#43;) {
+        System.out.println(&#34;低优先级线程执行：&#34; &#43; i);
+    }
+});
+lowPriorityThread.setPriority(Thread.MIN_PRIORITY);
+
+highPriorityThread.start();
+lowPriorityThread.start();
+
+可以降低后台不重要线程（比如异步日志）的CPU占用
+
+public class LogTask implements Runnable {
+    @Override
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()) {
+            // 执行轻量级任务（如日志记录）
+            logInfo();
+            Thread.yield(); // 让出 CPU，减少资源占用
+        }
+    }
+}
+
+可以降低线程空转的影响
+
+while (conditionNotMet()) {
+    Thread.yield(); // 让出 CPU，避免忙等待
+}
+">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/multi-thread/java-thread/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="Java中线程的实现">
+  <meta property="og:description" content="Java中线程的实现#线程与进程#线程是比进程更加轻量级的调度执行单位，引入线程可以将进程的资源分配和执行调度分开，各个线程共享进程的资源，又可以独立调度
+线程是Java中处理器资源调度的最基本单位
+Java线程的实现#Thread对象内的许多关键方法都被声明为native
+native方法意味着这个方法没有使用或无法使用平台无关的手段来实现，即，Java线程的实现依赖于平台对线程的实现 以HotSpot为例，每一个Java线程都是直接映射到一个操作系统原生线程来实现，中间没有额外的间接结构
+HotSpot自身不会干涉线程调度，只能设置优先级给操作系统提供调度建议，全权交给操作系统处理
+什么时候冻结/唤醒/停止线程、该给线程分配多少处理器执行时间、线程分配给哪个处理器执行，都是操作系统完成，操作系统全权决定
+Java线程调度：#线程调度指Java为线程分配处理器使用权的过程。 两种调度方式：协同式调度、抢占式调度
+Java使用的线程调度方式为抢占式调度
+每个线程都是由系统分配执行时间，线程的切换线程自己不能决定。不会出现一个线程导致整个进程或系统阻塞的问题。 Thread::yield方法主动让出执行时间，但是不能主动获取执行时间 Java只能建议操作系统给一些线程分配多一点执行时间，另一些少一点。通过设置优先级来完成 Java一共设置了十个级别的优先级，两个线程同时处于Ready状态时，优先级高的容易被同选择执行 操作系统仍是全权掌握决定权，甚至可以更改优先级。我们无法在程序中准确判断一组状态都为Ready的线程哪一个会先执行。 Java线程状态转换#Java语言定义了线程的六种状态：
+新建
+创建后尚未start的线程 运行
+线程有可能在执行，有可能在等待操作系统分配执行时间 无限期等待
+该状态的线程不会被分配处理器执行时间，必须等待其他线程显式唤醒
+如Thread.Join()，object.wait()的不设置Timeout的方法
+唤醒方法如notify() 限期等待
+等待期间不会被分配处理器调度时间，但是不需要其他线程显式唤醒，一定时间后系统会自动唤醒
+如sleep，有参的wait、join等方法 阻塞
+阻塞状态是在等待获取一个排他锁，将在另一个线程放弃一个排他锁时发生
+等待则是等待唤醒动作的出现 结束
+已终止的线程状态，线程结束执行 wait和notify/notifyAll#wait和notify/notifyAll方法是Object对象的实例方法 // 对象锁private static final Object lock = new Object();private static int count = 0;// 生产者public static void producer() {synchronized (lock) {count&#43;&#43;;System.out.println(&#34;生产数据，count=&#34; &#43; count);lock.notify(); // 唤醒消费者}}// 消费者public static void consumer() {synchronized (lock) {while (count == 0) {try {System.out.println(&#34;等待数据...&#34;);lock.wait(); // 释放锁并等待} catch (InterruptedException e) {e.printStackTrace();}}count--;System.out.println(&#34;消费数据，count=&#34; &#43; count);}} wait方法必须在sychronized同步代码块下使用，否则会报错 wait() 让线程释放锁并进入等待状态，需通过 同一对象的 notify()/notifyAll() 唤醒。 notify() 只能唤醒在该对象锁上等待的线程，且唤醒后线程需重新竞争锁 wait()和notify()/notifyAll()必须成对出现 没有 notify()，wait() 线程会一直阻塞；
+没有 wait()，notify() 会被忽略（无等待线程时调用 notify() 无副作用） Thread.sleep(long millis)#Thread类的静态方法 让线程等待一段时间后继续执行，不需要显式环境 try {Thread.sleep(1000);} catch (InterruptedException e) {e.printStackTrace();} thread.join()#Thread对象的实例方法 等待线程执行结束 让主线程等待该线程执行完毕后再继续执行 Thread thread = new Thread(() -&gt; {try {Thread.sleep(2000);System.out.println(&#34;子线程执行完毕&#34;);} catch (InterruptedException e) {e.printStackTrace();}});thread.start();System.out.println(&#34;主线程等待子线程结束...&#34;);thread.join(); // 主线程阻塞，直到子线程结束System.out.println(&#34;主线程继续执行&#34;); Thread.yield()#Thread 类的静态方法 主动让出当前线程的CPU资源，让当前线程从 运行状态 转为 就绪状态，允许其他同优先级线程抢占 CPU 不释放锁，也不阻塞线程，仅提示调度器重新分配资源。
+无法保证一定生效（调度器可能忽略 yield() 请求） 可以用于测试线程优先级等（强制触发线程上下文切换） Thread highPriorityThread = new Thread(() -&gt; {for (int i = 0; i &lt; 3; i&#43;&#43;) {System.out.println(&#34;高优先级线程执行：&#34; &#43; i);Thread.yield(); // 主动让出 CPU，观察低优先级线程是否能执行}});highPriorityThread.setPriority(Thread.MAX_PRIORITY);Thread lowPriorityThread = new Thread(() -&gt; {for (int i = 0; i &lt; 3; i&#43;&#43;) {System.out.println(&#34;低优先级线程执行：&#34; &#43; i);}});lowPriorityThread.setPriority(Thread.MIN_PRIORITY);highPriorityThread.start();lowPriorityThread.start(); 可以降低后台不重要线程（比如异步日志）的CPU占用 public class LogTask implements Runnable {@Overridepublic void run() {while (!Thread.currentThread().isInterrupted()) {// 执行轻量级任务（如日志记录）logInfo();Thread.yield(); // 让出 CPU，减少资源占用}}} 可以降低线程空转的影响 while (conditionNotMet()) {Thread.yield(); // 让出 CPU，避免忙等待}">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
+<title>Java中线程的实现 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/multi-thread/java-thread/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e521d4e74ad049e57acd95b356a8dd74d811b5742ecafd3779e3f862e6ba4fcc.js" integrity="sha256-5SHU50rQSeV6zZWzVqjddNgRtXQuyv03eeP4Yua6T8w=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="active">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>Java中线程的实现</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#线程与进程">线程与进程</a></li>
+    <li><a href="#java线程的实现">Java线程的实现</a></li>
+    <li><a href="#java线程调度">Java线程调度：</a></li>
+    <li><a href="#java线程状态转换">Java线程状态转换</a></li>
+    <li><a href="#wait和notifynotifyall">wait和notify/notifyAll</a></li>
+    <li><a href="#threadsleeplong-millis">Thread.sleep(long millis)</a></li>
+    <li><a href="#threadjoin">thread.join()</a></li>
+    <li><a href="#threadyield">Thread.yield()</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="java中线程的实现">
+  Java中线程的实现
+  <a class="anchor" href="#java%e4%b8%ad%e7%ba%bf%e7%a8%8b%e7%9a%84%e5%ae%9e%e7%8e%b0">#</a>
+</h1>
+<h2 id="线程与进程">
+  线程与进程
+  <a class="anchor" href="#%e7%ba%bf%e7%a8%8b%e4%b8%8e%e8%bf%9b%e7%a8%8b">#</a>
+</h2>
+<p>线程是比进程更加轻量级的调度执行单位，引入线程可以将进程的资源分配和执行调度分开，各个线程共享进程的资源，又可以独立调度<br>
+线程是Java中处理器资源调度的最基本单位</p>
+<h2 id="java线程的实现">
+  Java线程的实现
+  <a class="anchor" href="#java%e7%ba%bf%e7%a8%8b%e7%9a%84%e5%ae%9e%e7%8e%b0">#</a>
+</h2>
+<p>Thread对象内的许多关键方法都被声明为native<br>
+native方法意味着这个方法没有使用或无法使用平台无关的手段来实现，即，Java线程的实现依赖于平台对线程的实现
+以HotSpot为例，每一个Java线程都是直接映射到一个操作系统原生线程来实现，中间没有额外的间接结构<br>
+HotSpot自身不会干涉线程调度，只能设置优先级给操作系统提供调度建议，全权交给操作系统处理<br>
+什么时候冻结/唤醒/停止线程、该给线程分配多少处理器执行时间、线程分配给哪个处理器执行，都是操作系统完成，操作系统全权决定</p>
+<h2 id="java线程调度">
+  Java线程调度：
+  <a class="anchor" href="#java%e7%ba%bf%e7%a8%8b%e8%b0%83%e5%ba%a6">#</a>
+</h2>
+<p>线程调度指Java为线程分配处理器使用权的过程。
+两种调度方式：协同式调度、抢占式调度<br>
+Java使用的线程调度方式为抢占式调度</p>
+<ol>
+<li>每个线程都是由系统分配执行时间，线程的切换线程自己不能决定。不会出现一个线程导致整个进程或系统阻塞的问题。</li>
+<li>Thread::yield方法主动让出执行时间，但是不能主动获取执行时间</li>
+<li>Java只能建议操作系统给一些线程分配多一点执行时间，另一些少一点。通过设置优先级来完成</li>
+<li>Java一共设置了十个级别的优先级，两个线程同时处于Ready状态时，优先级高的容易被同选择执行</li>
+<li>操作系统仍是全权掌握决定权，甚至可以更改优先级。我们无法在程序中准确判断一组状态都为Ready的线程哪一个会先执行。</li>
+</ol>
+<h2 id="java线程状态转换">
+  Java线程状态转换
+  <a class="anchor" href="#java%e7%ba%bf%e7%a8%8b%e7%8a%b6%e6%80%81%e8%bd%ac%e6%8d%a2">#</a>
+</h2>
+<p>Java语言定义了线程的六种状态：</p>
+<ol>
+<li>新建<br>
+创建后尚未start的线程</li>
+<li>运行<br>
+线程有可能在执行，有可能在等待操作系统分配执行时间</li>
+<li>无限期等待<br>
+该状态的线程不会被分配处理器执行时间，必须等待其他线程显式唤醒<br>
+如Thread.Join()，object.wait()的不设置Timeout的方法<br>
+唤醒方法如notify()</li>
+<li>限期等待<br>
+等待期间不会被分配处理器调度时间，但是不需要其他线程显式唤醒，一定时间后系统会自动唤醒<br>
+如sleep，有参的wait、join等方法</li>
+<li>阻塞<br>
+阻塞状态是在等待获取一个排他锁，将在另一个线程放弃一个排他锁时发生<br>
+等待则是等待唤醒动作的出现</li>
+<li>结束<br>
+已终止的线程状态，线程结束执行</li>
+</ol>
+<h2 id="wait和notifynotifyall">
+  wait和notify/notifyAll
+  <a class="anchor" href="#wait%e5%92%8cnotifynotifyall">#</a>
+</h2>
+<ul>
+<li>wait和notify/notifyAll方法是Object对象的实例方法</li>
+</ul>
+<pre tabindex="0"><code>// 对象锁
+private static final Object lock = new Object();
+private static int count = 0;
+
+// 生产者
+public static void producer() {
+    synchronized (lock) {
+        count++;
+        System.out.println(&#34;生产数据，count=&#34; + count);
+        lock.notify(); // 唤醒消费者
+    }
+}
+
+// 消费者
+public static void consumer() {
+    synchronized (lock) {
+        while (count == 0) {
+            try {
+                System.out.println(&#34;等待数据...&#34;);
+                lock.wait(); // 释放锁并等待
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        count--;
+        System.out.println(&#34;消费数据，count=&#34; + count);
+    }
+}
+</code></pre><ul>
+<li>wait方法必须在sychronized同步代码块下使用，否则会报错</li>
+<li>wait() 让线程释放锁并进入等待状态，需通过 同一对象的 notify()/notifyAll() 唤醒。</li>
+<li>notify() 只能唤醒在该对象锁上等待的线程，且唤醒后线程需重新竞争锁</li>
+<li>wait()和notify()/notifyAll()必须成对出现
+没有 notify()，wait() 线程会一直阻塞；<br>
+没有 wait()，notify() 会被忽略（无等待线程时调用 notify() 无副作用）</li>
+</ul>
+<h2 id="threadsleeplong-millis">
+  Thread.sleep(long millis)
+  <a class="anchor" href="#threadsleeplong-millis">#</a>
+</h2>
+<ul>
+<li>Thread类的静态方法</li>
+<li>让线程等待一段时间后继续执行，不需要显式环境</li>
+</ul>
+<pre tabindex="0"><code>try {
+    Thread.sleep(1000);
+} catch (InterruptedException e) {
+    e.printStackTrace();
+}
+</code></pre><h2 id="threadjoin">
+  thread.join()
+  <a class="anchor" href="#threadjoin">#</a>
+</h2>
+<ul>
+<li>Thread对象的实例方法</li>
+<li>等待线程执行结束</li>
+<li>让主线程等待该线程执行完毕后再继续执行</li>
+</ul>
+<pre tabindex="0"><code>Thread thread = new Thread(() -&gt; {
+    try {
+        Thread.sleep(2000);
+        System.out.println(&#34;子线程执行完毕&#34;);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+});
+
+thread.start();
+System.out.println(&#34;主线程等待子线程结束...&#34;);
+thread.join(); // 主线程阻塞，直到子线程结束
+System.out.println(&#34;主线程继续执行&#34;);
+</code></pre><h2 id="threadyield">
+  Thread.yield()
+  <a class="anchor" href="#threadyield">#</a>
+</h2>
+<ul>
+<li>Thread 类的静态方法</li>
+<li>主动让出当前线程的CPU资源，让当前线程从 运行状态 转为 就绪状态，允许其他同优先级线程抢占 CPU
+不释放锁，也不阻塞线程，仅提示调度器重新分配资源。<br>
+无法保证一定生效（调度器可能忽略 yield() 请求）</li>
+<li>可以用于测试线程优先级等（强制触发线程上下文切换）</li>
+</ul>
+<pre tabindex="0"><code>Thread highPriorityThread = new Thread(() -&gt; {
+    for (int i = 0; i &lt; 3; i++) {
+        System.out.println(&#34;高优先级线程执行：&#34; + i);
+        Thread.yield(); // 主动让出 CPU，观察低优先级线程是否能执行
+    }
+});
+highPriorityThread.setPriority(Thread.MAX_PRIORITY);
+
+Thread lowPriorityThread = new Thread(() -&gt; {
+    for (int i = 0; i &lt; 3; i++) {
+        System.out.println(&#34;低优先级线程执行：&#34; + i);
+    }
+});
+lowPriorityThread.setPriority(Thread.MIN_PRIORITY);
+
+highPriorityThread.start();
+lowPriorityThread.start();
+</code></pre><ul>
+<li>可以降低后台不重要线程（比如异步日志）的CPU占用</li>
+</ul>
+<pre tabindex="0"><code>public class LogTask implements Runnable {
+    @Override
+    public void run() {
+        while (!Thread.currentThread().isInterrupted()) {
+            // 执行轻量级任务（如日志记录）
+            logInfo();
+            Thread.yield(); // 让出 CPU，减少资源占用
+        }
+    }
+}
+</code></pre><ul>
+<li>可以降低线程空转的影响</li>
+</ul>
+<pre tabindex="0"><code>while (conditionNotMet()) {
+    Thread.yield(); // 让出 CPU，避免忙等待
+}
+</code></pre></article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-05-28</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#线程与进程">线程与进程</a></li>
+    <li><a href="#java线程的实现">Java线程的实现</a></li>
+    <li><a href="#java线程调度">Java线程调度：</a></li>
+    <li><a href="#java线程状态转换">Java线程状态转换</a></li>
+    <li><a href="#wait和notifynotifyall">wait和notify/notifyAll</a></li>
+    <li><a href="#threadsleeplong-millis">Thread.sleep(long millis)</a></li>
+    <li><a href="#threadjoin">thread.join()</a></li>
+    <li><a href="#threadyield">Thread.yield()</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
