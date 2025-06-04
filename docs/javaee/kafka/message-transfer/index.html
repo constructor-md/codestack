@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="zh-CN" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="
+  消息的生产与消费流程
+  #
+
+
+  消息生产
+  #
+
+Producer生产消息
+可以指定消息的主题、Key、Value、时间戳、分区策略、可靠性参数
+此外客户端还需要配置序列化器、性能优化参数等
+
+  分区策略
+  #
+
+
+  默认分区
+  #
+
+
+Key != null：对Key进行Hash取模确定分区
+Key == null：轮询（RoundRobin）分配分区
+
+
+  自定义分区器
+  #
+
+通过实现 Partitioner 接口自定义路由逻辑
+    /**
+     * 自定义分区器，确保同一用户的消息总是发送到同一分区
+     * 通过对用户ID进行哈希计算，确定分区号
+     */
+    private static class UserIdPartitioner implements org.apache.kafka.clients.producer.Partitioner {
+        @Override
+        public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, org.apache.kafka.common.Cluster cluster) {
+            // 获取主题的分区数
+            int partitionCount = cluster.partitionsForTopic(topic).size();
+            if (partitionCount &lt;= 0) {
+                return 0;
+            }
+            
+            // 如果key为null，使用轮询方式分配分区
+            if (key == null) {
+                return Utils.toPositive(Utils.murmur2(valueBytes)) % partitionCount;
+            }
+            
+            // 对用户ID进行哈希，确保同一用户的消息总是发送到同一分区
+            return Utils.toPositive(Utils.murmur2(keyBytes)) % partitionCount;
+        }
+
+        @Override
+        public void close() {
+            // 无需关闭资源
+        }
+
+        @Override
+        public void configure(Map&lt;String, ?&gt; configs) {
+            // 无需配置
+        }
+    }
+
+  可靠性参数
+  #
+
+
+  acks
+  #
+
+
+0：无需确认（可能丢数据）。
+1：Leader 写入成功即确认（默认）。
+-1/all：ISR 所有副本同步成功才确认（最强保证）。
+
+
+  retries
+  #
+
+发送失败时的重试次数。">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/kafka/message-transfer/">
+  <meta property="og:site_name" content="CodeStack">
+  <meta property="og:title" content="消息的生产与消费流程">
+  <meta property="og:description" content="消息的生产与消费流程#消息生产#Producer生产消息
+可以指定消息的主题、Key、Value、时间戳、分区策略、可靠性参数
+此外客户端还需要配置序列化器、性能优化参数等
+分区策略#默认分区#Key != null：对Key进行Hash取模确定分区 Key == null：轮询（RoundRobin）分配分区 自定义分区器#通过实现 Partitioner 接口自定义路由逻辑
+/*** 自定义分区器，确保同一用户的消息总是发送到同一分区* 通过对用户ID进行哈希计算，确定分区号*/private static class UserIdPartitioner implements org.apache.kafka.clients.producer.Partitioner {@Overridepublic int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, org.apache.kafka.common.Cluster cluster) {// 获取主题的分区数int partitionCount = cluster.partitionsForTopic(topic).size();if (partitionCount &lt;= 0) {return 0;}// 如果key为null，使用轮询方式分配分区if (key == null) {return Utils.toPositive(Utils.murmur2(valueBytes)) % partitionCount;}// 对用户ID进行哈希，确保同一用户的消息总是发送到同一分区return Utils.toPositive(Utils.murmur2(keyBytes)) % partitionCount;}@Overridepublic void close() {// 无需关闭资源}@Overridepublic void configure(Map&lt;String, ?&gt; configs) {// 无需配置}} 可靠性参数#acks#0：无需确认（可能丢数据）。 1：Leader 写入成功即确认（默认）。 -1/all：ISR 所有副本同步成功才确认（最强保证）。 retries#发送失败时的重试次数。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-06-04T23:23:40+08:00">
+<title>消息的生产与消费流程 | CodeStack</title>
+<link rel="icon" href="/codestack/favicon.png" >
+<link rel="manifest" href="/codestack/manifest.json">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/kafka/message-transfer/">
+<link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
+  <script defer src="/codestack/fuse.min.js"></script>
+  <script defer src="/codestack/en.search.min.e167e55e922fb8d6dd8233b5c66f4878e88a900492391a12bd2b70521d6d7899.js" integrity="sha256-4WflXpIvuNbdgjO1xm9IeOiKkASSORoSvStwUh1teJk=" crossorigin="anonymous"></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/codestack/"><span>CodeStack</span>
+  </a>
+</h2>
+
+
+<div class="book-search hidden">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+<script>document.querySelector(".book-search").classList.remove("hidden")</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/" class="">计算机基础</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/" class="">计算机网络</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/" class="">传输层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/transport/tcp/" class="">TCP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/" class="">应用层</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/basic/net/application/http/" class="">HTTP</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/" class="">JavaEE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/" class="">Spring</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/ioc/" class="">依赖注入|控制反转|自动装配</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/aop/" class="">AOP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/transaction/" class="">Spring事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/bean-liftcycle-and-extension/" class="">Bean 生命周期与 SpringBoot 扩展点</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/three-party-jar-import/" class="">SpringBoot 引入第三方 Jar 包</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springmvc-http/indxe/" class="">SpringMVC 接收 HTTP</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/spring/springboot-spring/" class="">SpringBoot 相比 Spring</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/" class="">MySQL</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_index/" class="">InnoDB 索引</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_transaction/" class="">InnoDB 事务</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/innodb_lock/" class="">InnoDB 锁机制</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/sql-execution/" class="">SQL执行过程</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/logfile/" class="">日志文件及作用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/explain/" class="">Explain参数解释和查询成本分析</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/mysql/tree-high/" class="">索引树高度计算</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/kafka/" class="">Kafka</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/kafka/intro/" class="">简介</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/kafka/message-transfer/" class="active">消息的生产与消费流程</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javaee/redis/" class="">Redis</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/" class="">JavaSE</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/" class="">常用类</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/basic-data/" class="">基本数据类型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/string-stringbuilder-stringbuffer/" class="">String|StringBuilder|StringBuffer</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/object-equals/" class="">比较对象相等</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/auto-bin/" class="">自动拆装箱</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/common-class/int-integer/" class="">int|Integer</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/" class="">多线程</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-create/" class="">线程的创建和使用</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-pool/" class="">线程池的创建和运行逻辑</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/thread-interrupt/" class="">线程中断</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread/" class="">Java中线程的实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/threadlocal/" class="">ThreadLocal</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/aqs/" class="">AQS</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/java-thread-safe/" class="">Java的线程安全实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/CountDownLatch/" class="">CountDownLatch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/multi-thread/ReentrantLock/" class="">ReentrantLock</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/" class="">集合</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashmap/" class="">HashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/CopyOnWriteArrayList/" class="">CopyOnWriteArrayList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/ArrayList-LinkedList/" class="">ArrayList|LinkedList</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/hashset/" class="">HashSet</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/collection/Iterator/" class="">迭代器</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/" class="">其他</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/clone/" class="">深拷贝/浅拷贝</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/access-modifiers/" class="">访问控制修饰符</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/encap-inher-poly/" class="">封装|继承|多态</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/generics/" class="">泛型</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/serailizable/" class="">序列化和反序列化</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/exception/" class="">异常体系</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/javase/other/java-softwre-package/" class="">JDK|JRE|JVM</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/" class="">项目设计</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/server-runtime-excption/" class="">雪崩|限流|熔断|降级</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/distributed-lock/" class="">分布式锁实现</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/project/design-theory/" class="">一些设计理论</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/anomaly-investigation/" class="">在线异常排查</a>
+  
+
+          
+  <ul>
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/" class="">部署</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/ubuntu/" class="">Ubuntu</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/mysql/" class="">MySQL</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/redis/" class="">Redis</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/elasticsearch/" class="">ElasticSearch</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/minio/" class="">MinIO</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/codestack/docs/deploy/jenkins/" class="">Jenkins</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <h3>消息的生产与消费流程</h3>
+
+  <label for="toc-control">
+    
+    <img src="/codestack/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#消息生产">消息生产</a>
+      <ul>
+        <li><a href="#分区策略">分区策略</a></li>
+        <li><a href="#可靠性参数">可靠性参数</a></li>
+        <li><a href="#性能优化参数">性能优化参数</a></li>
+        <li><a href="#其他配置">其他配置</a></li>
+      </ul>
+    </li>
+    <li><a href="#消息存储和分布">消息存储和分布</a>
+      <ul>
+        <li><a href="#分区">分区</a></li>
+        <li><a href="#副本">副本</a></li>
+        <li><a href="#isrin-sync-replicas">ISR（In-Sync Replicas）</a></li>
+        <li><a href="#故障切换">故障切换</a></li>
+        <li><a href="#脑裂问题">脑裂问题</a></li>
+        <li><a href="#底层高效读写">底层高效读写</a></li>
+      </ul>
+    </li>
+    <li><a href="#消息消费">消息消费</a>
+      <ul>
+        <li><a href="#消费者组">消费者组</a></li>
+        <li><a href="#分区分配策略">分区分配策略</a></li>
+        <li><a href="#广播消息">广播消息</a></li>
+        <li><a href="#消息拉取模式">消息拉取模式</a></li>
+        <li><a href="#如何保证消费顺序性">如何保证消费顺序性</a></li>
+        <li><a href="#如何避免重复消费幂等性">如何避免重复消费（幂等性）</a></li>
+        <li><a href="#如何实现事务消息">如何实现事务消息</a></li>
+      </ul>
+    </li>
+    <li><a href="#消息清理策略">消息清理策略</a>
+      <ul>
+        <li><a href="#保留策略">保留策略</a></li>
+        <li><a href="#日志压缩">日志压缩</a></li>
+        <li><a href="#清理触发机制">清理触发机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#综论-1">综论</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown book-article"><h1 id="消息的生产与消费流程">
+  消息的生产与消费流程
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e7%9a%84%e7%94%9f%e4%ba%a7%e4%b8%8e%e6%b6%88%e8%b4%b9%e6%b5%81%e7%a8%8b">#</a>
+</h1>
+<h2 id="消息生产">
+  消息生产
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e7%94%9f%e4%ba%a7">#</a>
+</h2>
+<p>Producer生产消息<br>
+可以指定消息的主题、Key、Value、时间戳、分区策略、可靠性参数<br>
+此外客户端还需要配置序列化器、性能优化参数等</p>
+<h3 id="分区策略">
+  分区策略
+  <a class="anchor" href="#%e5%88%86%e5%8c%ba%e7%ad%96%e7%95%a5">#</a>
+</h3>
+<h4 id="默认分区">
+  默认分区
+  <a class="anchor" href="#%e9%bb%98%e8%ae%a4%e5%88%86%e5%8c%ba">#</a>
+</h4>
+<ul>
+<li>Key != null：对Key进行Hash取模确定分区</li>
+<li>Key == null：轮询（RoundRobin）分配分区</li>
+</ul>
+<h4 id="自定义分区器">
+  自定义分区器
+  <a class="anchor" href="#%e8%87%aa%e5%ae%9a%e4%b9%89%e5%88%86%e5%8c%ba%e5%99%a8">#</a>
+</h4>
+<p>通过实现 Partitioner 接口自定义路由逻辑</p>
+<pre tabindex="0"><code>    /**
+     * 自定义分区器，确保同一用户的消息总是发送到同一分区
+     * 通过对用户ID进行哈希计算，确定分区号
+     */
+    private static class UserIdPartitioner implements org.apache.kafka.clients.producer.Partitioner {
+        @Override
+        public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, org.apache.kafka.common.Cluster cluster) {
+            // 获取主题的分区数
+            int partitionCount = cluster.partitionsForTopic(topic).size();
+            if (partitionCount &lt;= 0) {
+                return 0;
+            }
+            
+            // 如果key为null，使用轮询方式分配分区
+            if (key == null) {
+                return Utils.toPositive(Utils.murmur2(valueBytes)) % partitionCount;
+            }
+            
+            // 对用户ID进行哈希，确保同一用户的消息总是发送到同一分区
+            return Utils.toPositive(Utils.murmur2(keyBytes)) % partitionCount;
+        }
+
+        @Override
+        public void close() {
+            // 无需关闭资源
+        }
+
+        @Override
+        public void configure(Map&lt;String, ?&gt; configs) {
+            // 无需配置
+        }
+    }
+</code></pre><h3 id="可靠性参数">
+  可靠性参数
+  <a class="anchor" href="#%e5%8f%af%e9%9d%a0%e6%80%a7%e5%8f%82%e6%95%b0">#</a>
+</h3>
+<h4 id="acks">
+  acks
+  <a class="anchor" href="#acks">#</a>
+</h4>
+<ul>
+<li>0：无需确认（可能丢数据）。</li>
+<li>1：Leader 写入成功即确认（默认）。</li>
+<li>-1/all：ISR 所有副本同步成功才确认（最强保证）。</li>
+</ul>
+<h4 id="retries">
+  retries
+  <a class="anchor" href="#retries">#</a>
+</h4>
+<p>发送失败时的重试次数。</p>
+<h4 id="enableidempotence">
+  enable.idempotence
+  <a class="anchor" href="#enableidempotence">#</a>
+</h4>
+<p>开启幂等性，避免重试导致的消息重复</p>
+<h4 id="transactionalid">
+  transactional.id
+  <a class="anchor" href="#transactionalid">#</a>
+</h4>
+<p>开启事务，保证跨分区、跨 Topic 的原子性</p>
+<h3 id="性能优化参数">
+  性能优化参数
+  <a class="anchor" href="#%e6%80%a7%e8%83%bd%e4%bc%98%e5%8c%96%e5%8f%82%e6%95%b0">#</a>
+</h3>
+<h4 id="batchsize">
+  batch.size
+  <a class="anchor" href="#batchsize">#</a>
+</h4>
+<p>批量发送的字节数阈值，达到阈值时触发发送。</p>
+<h4 id="lingerms">
+  linger.ms
+  <a class="anchor" href="#lingerms">#</a>
+</h4>
+<p>批量发送的等待时间，即使未达到 batch.size 也会发送。<br>
+指定生产者在发送批量消息前等待的时间，当设置此参数后，即便没有达到批量消息的指定大小，到达时间后生产者也会发送批量消息到 broker</p>
+<h4 id="compressiontype">
+  compression.type
+  <a class="anchor" href="#compressiontype">#</a>
+</h4>
+<p>消息压缩类型（none/gzip/snappy/lz4/zstd）</p>
+<h4 id="maxrequestsize">
+  max.request.size
+  <a class="anchor" href="#maxrequestsize">#</a>
+</h4>
+<p>单个请求的最大字节数，防止超大消息。</p>
+<h3 id="其他配置">
+  其他配置
+  <a class="anchor" href="#%e5%85%b6%e4%bb%96%e9%85%8d%e7%bd%ae">#</a>
+</h3>
+<h4 id="序列化器">
+  序列化器
+  <a class="anchor" href="#%e5%ba%8f%e5%88%97%e5%8c%96%e5%99%a8">#</a>
+</h4>
+<p>org.apache.kafka.common.serialization.StringSerializer 等</p>
+<h4 id="拦截器">
+  拦截器
+  <a class="anchor" href="#%e6%8b%a6%e6%88%aa%e5%99%a8">#</a>
+</h4>
+<p>实现 ProducerInterceptor 接口，在消息发送前后插入自定义逻辑（如添加 TraceID）</p>
+<h4 id="连接参数">
+  连接参数
+  <a class="anchor" href="#%e8%bf%9e%e6%8e%a5%e5%8f%82%e6%95%b0">#</a>
+</h4>
+<ul>
+<li>bootstrap.servers：Kafka Broker 地址列表（无需全部，用于发现集群）。</li>
+<li>connections.max.idle.ms：空闲连接的超时时间。</li>
+</ul>
+<h2 id="消息存储和分布">
+  消息存储和分布
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e5%ad%98%e5%82%a8%e5%92%8c%e5%88%86%e5%b8%83">#</a>
+</h2>
+<h3 id="分区">
+  分区
+  <a class="anchor" href="#%e5%88%86%e5%8c%ba">#</a>
+</h3>
+<p>Kafka的分区指的是一个主题的一个分区<br>
+主题可以划分为多个分区，每个分区是一个有序的，不可变的消息序列<br>
+收到生产者的消息，最终只会被路由到一个分区进行存放<br>
+即一条消息，必须属于且仅属于一个分区</p>
+<h3 id="副本">
+  副本
+  <a class="anchor" href="#%e5%89%af%e6%9c%ac">#</a>
+</h3>
+<p>Kafka使用副本机制为分区提供数据备份存储，实现数据冗余和高可用<br>
+每个分区可能会有一个Leader副本和多个Follower副本，具体取决于设置的replicas值<br>
+Leader副本负责处理所有读写请求，多个Follower副本会定期从Leader副本拉取数据备份，保证数据一致性</p>
+<h3 id="isrin-sync-replicas">
+  ISR（In-Sync Replicas）
+  <a class="anchor" href="#isrin-sync-replicas">#</a>
+</h3>
+<p>指的是处于同步状态的副本集合，仅包括那些同步进度跟上Leader的副本</p>
+<h3 id="故障切换">
+  故障切换
+  <a class="anchor" href="#%e6%95%85%e9%9a%9c%e5%88%87%e6%8d%a2">#</a>
+</h3>
+<p>Kafka集群有一个控制器节点，负责管理副本生命周期和处理分区领导者选举<br>
+当Leader副本不可用时，控制器会在ISR中选举新的Leader副本，保证分区高可用</p>
+<h4 id="下线判断">
+  下线判断
+  <a class="anchor" href="#%e4%b8%8b%e7%ba%bf%e5%88%a4%e6%96%ad">#</a>
+</h4>
+<ol>
+<li>
+<p>Follower<br>
+Follower 向 Leader 发送 <strong>FetchRequest</strong> 后，若在 <strong>replica.lag.time.max.ms</strong>（默认 10 秒）内未收到响应，会认为 Leader <strong>可能下线</strong>，并触发 <strong>重新获取元数据</strong>（MetadataRequest）操作，确认 Leader 是否仍为当前节点</p>
+</li>
+<li>
+<p>Leader<br>
+Leader 维护一个 <strong>副本列表（ReplicaManager）</strong>，记录每个 Follower 的最近心跳时间戳。若某个 Follower 的心跳间隔超过 <strong>replica.lag.time.max.ms</strong>，Leader 会将其从 <strong>ISR（In-Sync Replicas）</strong> 中移除（但不会立即触发选举，仅标记为 “不同步”）</p>
+</li>
+<li>
+<p>控制器</p>
+</li>
+</ol>
+<ul>
+<li>ZooKeeper 模式：<br>
+控制器通过监听 ZooKeeper 中 /brokers/ids/[brokerId] 节点的删除事件，判断 Broker 是否下线。若 Leader 所在 Broker 下线，控制器会触发分区的领导者选举。</li>
+<li>KRaft 模式：<br>
+控制器通过 Raft 协议的 心跳机制（如 AppendEntries 请求）检测节点存活状态。若 Leader 节点在 election.timeout.ms（默认 100-500 毫秒）内未响应心跳，其他节点会发起 Raft 选举，重新选出控制器和分区领导者。</li>
+</ul>
+<h4 id="选举流程">
+  选举流程
+  <a class="anchor" href="#%e9%80%89%e4%b8%be%e6%b5%81%e7%a8%8b">#</a>
+</h4>
+<h4 id="步骤-1控制器发起选举请求">
+  步骤 1：控制器发起选举请求
+  <a class="anchor" href="#%e6%ad%a5%e9%aa%a4-1%e6%8e%a7%e5%88%b6%e5%99%a8%e5%8f%91%e8%b5%b7%e9%80%89%e4%b8%be%e8%af%b7%e6%b1%82">#</a>
+</h4>
+<ul>
+<li>ZooKeeper 模式：<br>
+控制器从 ZooKeeper 的 /controller 节点<strong>获取当前分区的 ISR 列表</strong>，优先从 ISR 中选择 <strong>LEO（Log End Offset）最大的副本</strong> 作为新 Leader（选择最多数据的副本作为新的Leader）。
+<ul>
+<li>通信逻辑：控制器通过 PartitionStateMachine 调用各 Broker 的 updateMetadata 接口，通知新 Leader 信息。</li>
+</ul>
+</li>
+<li>KRaft 模式：<br>
+控制器通过 Raft 协议的 RequestVote 和 AppendEntries 消息协调选举，直接与分区的副本节点通信，确认候选者的 <strong>Epoch</strong> 和 <strong>Log Offset</strong> 是否符合条件（需满足 <strong>“多数派原则”</strong> 和 <strong>“日志完整性检查”</strong>）。</li>
+</ul>
+<blockquote>
+<p>多数派原则<br>
+Kafka 使用多数派原则来保证数据的一致性和可用性<br>
+在分布式系统中，多数派是指超过一半的节点或副本<br>
+生产者发送消息到 Kafka 集群时，只有当消息被写入到多数派副本中，才会被认为是成功提交。<br>
+这样即使部分副本所在节点出现故障，只要多数派副本可用，数据就不会丢失，也能保证数据的一致性。<br>
+当需要选举新的领导者时，也会基于多数派原则，只有在多数派副本中的副本才有资格被选举为新的领导者，以确保新领导者拥有最新的数据（肯定也是数据最新最多的副本）</p></blockquote>
+<blockquote>
+<p>日志完整性检查<br>
+日志完整性检查是 Kafka 用于确保分区日志数据完整性和一致性的机制<br>
+Kafka 中的数据是以日志的形式存储在分区中的，每个分区由多个日志段组成</p>
+<ul>
+<li>数据写入时：生产者发送消息到 Kafka 集群，Kafka 会将消息追加到分区的日志中。在写入过程中，会对消息进行校验和验证，确保消息的格式正确、大小符合限制等。同时，Kafka 会为每条消息分配一个唯一的偏移量（offset），用于标识消息在分区中的位置和顺序1。</li>
+<li>副本同步时： follower 副本会从 leader 副本拉取消息并写入自己的日志中。在这个过程中，会进行日志完整性检查，确保拉取到的消息与 leader 副本上的消息一致。如果发现不一致，会根据一定的策略进行处理，如重新拉取消息或标记副本为不同步状态。</li>
+<li>节点故障恢复时：当 broker 节点发生故障重启后，会对本地存储的分区日志进行完整性检查。它会检查日志文件的格式是否正确、偏移量是否连续、是否存在损坏的消息等。如果发现问题，会尝试通过与其他正常副本进行数据同步来修复日志</li>
+</ul></blockquote>
+<h4 id="步骤-2副本节点的响应与状态变更">
+  步骤 2：副本节点的响应与状态变更
+  <a class="anchor" href="#%e6%ad%a5%e9%aa%a4-2%e5%89%af%e6%9c%ac%e8%8a%82%e7%82%b9%e7%9a%84%e5%93%8d%e5%ba%94%e4%b8%8e%e7%8a%b6%e6%80%81%e5%8f%98%e6%9b%b4">#</a>
+</h4>
+<p>控制器直接告诉某个节点被选中了，然后发送消息告知。被选中的是候选者，没被选中的继续当Follower</p>
+<ul>
+<li>候选者（Candidate）：<br>
+副本节点收到选举请求后，会对比自身的 <strong>日志偏移量（Log Offset）</strong> 和 <strong>领导者纪元（Leader Epoch）（领导者版本）</strong>：
+<ul>
+<li>若自身 Log Offset 大于等于其他候选者，且处于 ISR 中（ZooKeeper 模式），则返回 <strong>同意投票（Vote Grant）</strong>，并将自己状态切换为 <strong>Leader</strong>。</li>
+<li>若不符合条件（如 Log 落后），则返回 <strong>拒绝投票（Vote Deny）</strong>，并保持 <strong>Follower</strong> 状态。</li>
+</ul>
+</li>
+<li>非候选者（Follower）：
+节点收到新 Leader 的元数据更新后，会通过 <strong>MetadataRequest</strong> 刷新本地缓存，并向新 Leader 发送 <strong>FetchRequest</strong> 建立心跳连接，开始同步数据。
+步骤 3：选举结果的全局广播</li>
+<li>控制器通过 UpdateMetadataRequest 协议向所有 Broker 广播新 Leader 信息，包含：
+<ul>
+<li>分区的新 Leader 节点 ID、地址。</li>
+<li>新的 ISR 列表（可能因选举调整）。</li>
+</ul>
+</li>
+<li>Broker 接收到请求后，更新本地的 <strong>分区元数据缓存</strong>，并通知消费者和生产者路由变更</li>
+</ul>
+<h3 id="脑裂问题">
+  脑裂问题
+  <a class="anchor" href="#%e8%84%91%e8%a3%82%e9%97%ae%e9%a2%98">#</a>
+</h3>
+<p>脑裂是指部分节点失去与集群之间的网络连接，或者某个节点因为故障与集群断开连接后无法恢复。从而形成多个子集群，各自都认为自己是主集群，导致数据不一致或服务异常</p>
+<h4 id="kafka的脑裂可能的形式">
+  Kafka的脑裂可能的形式
+  <a class="anchor" href="#kafka%e7%9a%84%e8%84%91%e8%a3%82%e5%8f%af%e8%83%bd%e7%9a%84%e5%bd%a2%e5%bc%8f">#</a>
+</h4>
+<p>分区选举导致</p>
+<ol>
+<li>Leader节点与其他节点之间出现网络分区，其他节点无法与Leader通信，于是选举出新Leader</li>
+<li>旧Leader仍然认为自己是Leader，网络恢复后，出现新旧Leader并存的情况，导致生产者向两个 Leader 写入数据，引发日志不一致
+Zookeeper分区导致<br>
+早期版本的 Kafka 依赖 ZooKeeper 存储分区 Leader 信息，若 ZooKeeper 集群出现短暂分区，不同 Broker 可能读取到不同的 Leader 元数据，导致对 “谁是当前 Leader” 的认知不一致</li>
+</ol>
+<h4 id="kafka避免脑裂">
+  Kafka避免脑裂
+  <a class="anchor" href="#kafka%e9%81%bf%e5%85%8d%e8%84%91%e8%a3%82">#</a>
+</h4>
+<p>新旧Leader并存：（领导者版本判断）<br>
+新 Leader 当选后，Epoch 递增，旧 Leader 收到请求时若发现自身 Epoch 小于当前 Epoch，会拒绝处理并返回 NotLeaderException</p>
+<h3 id="底层高效读写">
+  底层高效读写
+  <a class="anchor" href="#%e5%ba%95%e5%b1%82%e9%ab%98%e6%95%88%e8%af%bb%e5%86%99">#</a>
+</h3>
+<h4 id="架构层优化">
+  架构层优化
+  <a class="anchor" href="#%e6%9e%b6%e6%9e%84%e5%b1%82%e4%bc%98%e5%8c%96">#</a>
+</h4>
+<ol>
+<li>分区机制<br>
+一个主题的分为多个分区，多个分区分散在不同Broker上<br>
+写入消息可以在多个Broker上并行写入<br>
+消费者按分区消费，容易进行负载均衡，避免单一分区读压力过大</li>
+<li>副本机制<br>
+分区有个副本，进行读写分流（2.4版本以前不支持，所有读写都由Leader副本承担）</li>
+</ol>
+<h4 id="存储层优化">
+  存储层优化
+  <a class="anchor" href="#%e5%ad%98%e5%82%a8%e5%b1%82%e4%bc%98%e5%8c%96">#</a>
+</h4>
+<ol>
+<li>顺序写盘<br>
+Kafka消息是追加式写入，追加到分区日志文件末尾，避免随机写<br>
+顺序写盘速度可达600MB/s以上，远高于随机写的100MB/s</li>
+<li>页缓存<br>
+Kafka消息日志直接使用操作系统页缓存，无需额外JVM堆缓存<br>
+写入时写入页缓存，操作系统异步刷盘<br>
+读取时先找页缓存获取数据，避免频繁磁盘IO</li>
+<li>日志分段<br>
+每个分区的日志文件还会按大小或时间切分为多个Segment文件（如1GB/段）<br>
+可以方便删除老数据，直接删除Segment文件<br>
+索引文件(.index)和数据文件(.log)分离，可以加速消息定位</li>
+</ol>
+<h4 id="网络传输优化">
+  网络传输优化
+  <a class="anchor" href="#%e7%bd%91%e7%bb%9c%e4%bc%a0%e8%be%93%e4%bc%98%e5%8c%96">#</a>
+</h4>
+<ol>
+<li>零拷贝<br>
+Kafka与网卡之间的数据传输也使用零拷贝<br>
+传统拷贝：磁盘 - 内核缓存 - 用户空间 - 套接字缓存 - 网卡<br>
+零拷贝：磁盘 - 内核缓存 - 网卡（跳过用户空间）<br>
+减少2次上下文切换和3次数据拷贝</li>
+<li>批量处理压缩<br>
+生产者消息是批量发送的，减少网络请求次数<br>
+消息可以压缩，支持GZIP、Snappy、LZ4等压缩算法<br>
+压缩消息减少网络带宽，提升磁盘存储效率</li>
+</ol>
+<h4 id="索引查找优化">
+  索引查找优化
+  <a class="anchor" href="#%e7%b4%a2%e5%bc%95%e6%9f%a5%e6%89%be%e4%bc%98%e5%8c%96">#</a>
+</h4>
+<ol>
+<li>稀疏索引<br>
+Kafka给每个日志段维护偏移量索引(.index)和时间戳索引(.timeindex)</li>
+</ol>
+<ul>
+<li>偏移量索引：记录消息在日志文件内的偏移量，每间隔4KB日志文件建立一个索引项（不精确稠密的稀疏索引）</li>
+<li>时间戳索引：映射时间戳到偏移量，便于按时间范围查询</li>
+</ul>
+<ol start="2">
+<li>二分查找<br>
+先通过二分查找在索引文件找到最近的索引<br>
+再从索引的位置开始顺序扫描日志文件，找到目标消息</li>
+</ol>
+<h4 id="综论">
+  综论
+  <a class="anchor" href="#%e7%bb%bc%e8%ae%ba">#</a>
+</h4>
+<p>Kafka 通过 分布式分区 实现并行处理，利用 顺序写磁盘 和 零拷贝技术 优化 I/O 性能，结合 批量压缩 和 页缓存 大幅提升吞吐量<br>
+这种设计使其特别适合大数据场景下的实时数据流处理，成为业界高吞吐量消息系统的首选方案</p>
+<h2 id="消息消费">
+  消息消费
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e6%b6%88%e8%b4%b9">#</a>
+</h2>
+<p>Consumer 订阅消息并消费消息，每个Comsumer都会属于一个 Comsumer-Group<br>
+采用不同的消息拉取模式获取主题内的消息<br>
+消费还有许多需要的场景，基于Kafka或业务搭配设计来实现</p>
+<h3 id="消费者组">
+  消费者组
+  <a class="anchor" href="#%e6%b6%88%e8%b4%b9%e8%80%85%e7%bb%84">#</a>
+</h3>
+<p>Consumer-Group<br>
+Consumer-Group是一组消费者，共同协作消费一个或多个主题中的消息<br>
+每个Consumer-Group有一个唯一标识符<br>
+属于同一组的消费者会协同工作，保证一个组内消费者只会对每条消息消费一次<br>
+具体来说</p>
+<ol>
+<li>每个Consumer-Group的每个消费者独立消费不同分区的数据，一个分区只能被一个消费者消费</li>
+<li>即使多个消费者在一个组消费同一个Topic，Kafka也会确保每条消息只会被组内其中一个消费者处理，极大提升并发性和处理速度，保证消息的高效处理</li>
+<li>Consumer-Group可以实现负载均衡。当有新的消费者加入或者离开组，Kafka会自动均衡分区消费，将需要消费的分区重新分配给现存消费者</li>
+</ol>
+<h3 id="分区分配策略">
+  分区分配策略
+  <a class="anchor" href="#%e5%88%86%e5%8c%ba%e5%88%86%e9%85%8d%e7%ad%96%e7%95%a5">#</a>
+</h3>
+<p>每个消费者组会得到全量数据<br>
+由消费者组内的消费者实例负载均衡的消费，具体是按分区消费</p>
+<ul>
+<li>分区肯定要整个整个的交给消费者<br>
+如果消费者组内消费者数量小于分区数量时，依赖分区分配策略而定<br>
+如果分区数量小于组内消费者数量，就会有一部分消费者处于空闲状态，什么消息都拿不到</li>
+</ul>
+<ol>
+<li>Range 范围分配策略<br>
+Kafka默认的分配策略<br>
+首先，将分区按照序号排列，然后计算每个消费者平均分配到的分区数量n = 分区数量 / 消费者数量，以及剩余的分区数量m = 分区数量 % 消费者数量。<br>
+每个消费者会消费n个分区，然后再将剩余分区给前m个消费者，直到分完<br>
+前m个消费者会多消费一个分区，即前m个消费者每个消费n+1个分区，剩余消费者每个消费n个分区<br>
+例如，有 10 个分区和 3 个消费者，那么n=3，m=1，则消费者C1消费 4 个分区，C2和C3各消费 3 个分区。需要注意的是，Range 范围分配策略是针对每个 Topic 的</li>
+<li>RoundRobin 轮询策略<br>
+将消费组内所有消费者以及消费者所订阅的所有 Topic 的 Partition 按照字典序排序（Topic 和分区的 hashcode 进行排序），然后通过轮询方式逐个将分区以此分配给每个消费者<br>
+比如有三个消费者C1、C2、C3，会被排序后组成环状结构<br>
+然后有主题T1（三个分区P1、P2、P3）、主题T2（四个分区P1、P2、P3、P4），主题T3（两个分区P1、P2）。分区按顺序排列好。然后轮询将分区逐个交给消费者。</li>
+<li>Sticky 粘性分配策略<br>
+从 Kafka 0.11.x 开始引入。<br>
+该策略主要有两个目的</li>
+</ol>
+<ul>
+<li>一是使分区分配尽可能均匀</li>
+<li>二是在发生 Rebalance 的时候，分区的分配尽可能与上一次分配保持相同<br>
+在没有发生 Rebalance 时，Sticky 粘性分配策略和 RoundRobin 分配策略类似。当发生 Rebalance 时，例如某个消费者崩溃了，该策略会尽量保留之前的分配结果，只将原本由崩溃消费者负责的分区再均匀分配给其他消费者，这样可以减少系统资源的浪费</li>
+</ul>
+<h3 id="广播消息">
+  广播消息
+  <a class="anchor" href="#%e5%b9%bf%e6%92%ad%e6%b6%88%e6%81%af">#</a>
+</h3>
+<p>比较常见的消费模式<br>
+当一个主题下，消费者不满足仅获取某个分区的消息，而是希望每条消息每个消费者都能消费<br>
+可以考虑:</p>
+<ol>
+<li>单分区主题 + 每个消费者一个消费者组<br>
+首先让全量消息都放在一个分区内，还能保证顺序<br>
+然后每个消费者组都能获取全量数据，从而让每个消费者都能获取全量数据</li>
+<li>多分区主题 + 每个消费者一个消费者组<br>
+消息可以分区存放<br>
+但所有分区都会被分配给组内唯一的消费者，使得各个消费者都能获取全量数据，但是可能多分区无顺序</li>
+<li>辨析<br>
+多分区本来就是为了负载均衡存在的，包括生产者写入的负载均衡和消费者消费的负载均衡<br>
+这种需求基本没有消费者的负载均衡，所以每个消费者一个消费者组<br>
+如果生产者不一，且高并发，则使用多分区存放消息。否则单分区即可</li>
+</ol>
+<h3 id="消息拉取模式">
+  消息拉取模式
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e6%8b%89%e5%8f%96%e6%a8%a1%e5%bc%8f">#</a>
+</h3>
+<p>Kafka的消费者消息获取，主要基于Pull拉取模式，而非传统的Push推送模式</p>
+<ol>
+<li>Push模式的问题<br>
+Push模式是Broker将生产者消息推送到消费者<br>
+如果消费者消费速度慢，Push会导致消费者缓冲区溢出或系统负载过高（导致背压问题）<br>
+而Broker难以根据消费者状态动态调整推送速率</li>
+<li>Pull模式原理<br>
+消费者主动从Broker拉取消息</li>
+</ol>
+<pre tabindex="0"><code>// 消费者拉取消息的核心代码
+while (true) {
+    ConsumerRecords&lt;String, String&gt; records = consumer.poll(Duration.ofMillis(100));
+    for (ConsumerRecord&lt;String, String&gt; record : records) {
+        // 处理消息
+        System.out.printf(&#34;offset = %d, key = %s, value = %s%n&#34;, 
+                          record.offset(), record.key(), record.value());
+    }
+    // 手动提交偏移量
+    consumer.commitSync();
+}
+</code></pre><p>关键机制：</p>
+<ol>
+<li>消费者主动拉取<br>
+通过poll方法定期从Broker拉取消息，拉取频率和批量大小可配置</li>
+<li>基于offset定位<br>
+消费者维护消费偏移量offset，可以随时指定位置拉取（比如从头消费、从特定位置恢复）</li>
+<li>长轮询</li>
+</ol>
+<ul>
+<li>如果Broker没有新消息，poll不会立即返回，而是等待一小段时间如500ms，避免Broker频繁处理空请求</li>
+<li>通过 fetch.min.bytes和fetch.max.wait.ms 参数可以控制长轮询行为</li>
+</ul>
+<ol start="4">
+<li>批量传输<br>
+Broker批量返回数据，提升吞吐量，减少网络开销</li>
+</ol>
+<p>Pull模式的优势：</p>
+<ol>
+<li>消费者自主控制拉取频率和批量大小，避免过载<br>
+背压消息被存储到Kafka的磁盘中缓冲等待消费，而磁盘很便宜</li>
+<li>故障恢复灵活<br>
+消费者可以通过重置 offset 重新消费历史消息（如系统故障后恢复）</li>
+<li>高效利用网络带宽<br>
+批量拉取和长轮询，减少空请求，优化网络利用率</li>
+<li>支持多消费模式<br>
+每个消费者组的消费者都能自行独立控制消费进度，互不影响</li>
+</ol>
+<h3 id="如何保证消费顺序性">
+  如何保证消费顺序性
+  <a class="anchor" href="#%e5%a6%82%e4%bd%95%e4%bf%9d%e8%af%81%e6%b6%88%e8%b4%b9%e9%a1%ba%e5%ba%8f%e6%80%a7">#</a>
+</h3>
+<h4 id="消息存储的顺序性">
+  消息存储的顺序性
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e5%ad%98%e5%82%a8%e7%9a%84%e9%a1%ba%e5%ba%8f%e6%80%a7">#</a>
+</h4>
+<p>数据存储时自然在分区内使用Offset保证了消息的顺序性<br>
+但多分区的顺序性无法保证<br>
+可以通过在生产时指定Key，使得相同Key的消息被路由到同一个分区存储，从而保证顺序性<br>
+Key可以设置成业务含以上对消息的分组，如同一用户同一订单的消息等<br>
+从而使得业务含义上需要组顺序的消息保证顺序存储</p>
+<h4 id="消息消费的顺序性">
+  消息消费的顺序性
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e6%b6%88%e8%b4%b9%e7%9a%84%e9%a1%ba%e5%ba%8f%e6%80%a7">#</a>
+</h4>
+<p>分区的消息会整个交给一个消费者消息<br>
+所以消费者应该单线程消费，以保证消费顺序性（禁止并行并发消费）<br>
+避免并发消费导致顺序混乱<br>
+对顺序不敏感的分区，允许并行消费，通过业务层去重或排序补偿</p>
+<h3 id="如何避免重复消费幂等性">
+  如何避免重复消费（幂等性）
+  <a class="anchor" href="#%e5%a6%82%e4%bd%95%e9%81%bf%e5%85%8d%e9%87%8d%e5%a4%8d%e6%b6%88%e8%b4%b9%e5%b9%82%e7%ad%89%e6%80%a7">#</a>
+</h3>
+<h4 id="生产者消息提交幂等">
+  生产者消息提交幂等
+  <a class="anchor" href="#%e7%94%9f%e4%ba%a7%e8%80%85%e6%b6%88%e6%81%af%e6%8f%90%e4%ba%a4%e5%b9%82%e7%ad%89">#</a>
+</h4>
+<p>生产者有消息重试发送的机制，需要确保重试发送消息不产生重复消息<br>
+生产者实例在启动时，Kafka会分配唯一PID。重启后变更、但同一实例的PID唯一固定<br>
+每个PID对每个分区会维护一个递增序列号，发送消息会附带PID和序列号<br>
+重试发送消息时，如果发现有相同PID+分区+序列号的消息，则忽略重复请求</p>
+<pre tabindex="0"><code># 在生产者配置中启用幂等性（默认 false）
+producer.properties:
+  enable.idempotence = true
+</code></pre><ul>
+<li>仅保证 单会话内的幂等性（生产者重启后 PID 变更，无法避免跨会话重复）。</li>
+<li>仅作用于 单分区内的消息，无法保证跨分区或跨主题的事务性</li>
+</ul>
+<h4 id="消费者消费幂等">
+  消费者消费幂等
+  <a class="anchor" href="#%e6%b6%88%e8%b4%b9%e8%80%85%e6%b6%88%e8%b4%b9%e5%b9%82%e7%ad%89">#</a>
+</h4>
+<p>消费者通过提交偏移量标记已经消费的消息位置，避免消费到已经消费的消息<br>
+所以需要谨慎提交偏移量，以免拉取到重复消息<br>
+应关闭自动提交，改为处理完消息后手动同步提交</p>
+<pre tabindex="0"><code>props.put(&#34;enable.auto.commit&#34;, &#34;false&#34;);
+// 处理完消息后提交
+consumer.commitSync();
+</code></pre><h4 id="业务层幂等">
+  业务层幂等
+  <a class="anchor" href="#%e4%b8%9a%e5%8a%a1%e5%b1%82%e5%b9%82%e7%ad%89">#</a>
+</h4>
+<p>如果Kafka无法避免重复消息（比如提交偏移量前宕机），通过业务设计实现消费幂等</p>
+<ol>
+<li>消息携带唯一标识，如订单号、消息ID、请求ID等，Redis高效缓存一定时间的消息ID，重复消息忽略</li>
+<li>状态机校验：对于状态业务，仅允许按一定顺序变更状态（创建-支付-完成），拒绝重复操作和无效操作</li>
+<li>数据库唯一约束（类似Redis缓存）<br>
+重复消息的写入操作被数据库丢弃或报错失效</li>
+</ol>
+<h3 id="如何实现事务消息">
+  如何实现事务消息
+  <a class="anchor" href="#%e5%a6%82%e4%bd%95%e5%ae%9e%e7%8e%b0%e4%ba%8b%e5%8a%a1%e6%b6%88%e6%81%af">#</a>
+</h3>
+<p>Kafka的事务性消息，指的是生产者原子性的写入，是生产者端的写入保障机制<br>
+事务的成功意味着消息被可靠的提交到Kafka集群，而消费者是否正确消费需要应用自行处理（幂等、重试等）</p>
+<h2 id="消息清理策略">
+  消息清理策略
+  <a class="anchor" href="#%e6%b6%88%e6%81%af%e6%b8%85%e7%90%86%e7%ad%96%e7%95%a5">#</a>
+</h2>
+<p>每个主题多个分区，每个分区物理上存储为多个日志文件序列<br>
+可以按时间或大小分段存储<br>
+分为：多个固定大小或时间范围的分段文件（.log），以及每个日志分段对应各自的偏移量索引文件(.index)和时间戳索引文件(.timeindex)<br>
+便于快速删除过期分段、避免全量扫描</p>
+<h3 id="保留策略">
+  保留策略
+  <a class="anchor" href="#%e4%bf%9d%e7%95%99%e7%ad%96%e7%95%a5">#</a>
+</h3>
+<p>可以配置保留时间或保留大小自动清理消息，支持以下两种策略（可以同时配置，满足任意一个即可触发清理）</p>
+<ol>
+<li>按时间保留（默认策略）<br>
+通过log.retention.hours配置，默认168小时=7天<br>
+可以细分为log.retention.minutes或log.retention.ms<br>
+可以在主题级别覆盖全局配置<br>
+清理逻辑：定期扫描分区日志分段，删除早于保留时间的分段</li>
+<li>按大小保留<br>
+通过log.retention.bytes配置，默认-1表示不限制<br>
+按分区总大小控制，当分区数据超过阈值，删除最旧的分段直到满足大小要求<br>
+优先级比时间保留低，仅在空间紧张时作为补充<br>
+可以与时间策略结合使用，避免单个分区无限增长<br>
+注意：清理的删除是永久删除，需要确保消费端已经消费处理</li>
+</ol>
+<h3 id="日志压缩">
+  日志压缩
+  <a class="anchor" href="#%e6%97%a5%e5%bf%97%e5%8e%8b%e7%bc%a9">#</a>
+</h3>
+<p>适用于键值对场景（应该很少用），保留同一键的最新值，清理旧数据，确保仅存储最新状态<br>
+设置：<br>
+cleanup.policy=compact（创建主题时设置，或通过 alter topic 修改）<br>
+min.compcation.lag.ms 消息在日志中保留的最小时间（避免频发压缩）<br>
+工作原理</p>
+<ol>
+<li>后台线程定期扫描分区，按消息Key分组</li>
+<li>对每个键，仅保留最新Offset的消息，删除旧版本</li>
+<li>压缩后的分段文件名 clean-xxx.log，同步更新索引文件
+注意：<br>
+压缩会破坏分区的全局顺序，同一键的消息顺序保留</li>
+</ol>
+<h3 id="清理触发机制">
+  清理触发机制
+  <a class="anchor" href="#%e6%b8%85%e7%90%86%e8%a7%a6%e5%8f%91%e6%9c%ba%e5%88%b6">#</a>
+</h3>
+<p>通过后台线程定期执行清理任务</p>
+<ol>
+<li>定时清理<br>
+每个Broker启动时创建Log Clean线程，默认每30秒检查一次是否需要清理</li>
+</ol>
+<h2 id="综论-1">
+  综论
+  <a class="anchor" href="#%e7%bb%bc%e8%ae%ba-1">#</a>
+</h2>
+<p>生产者生产的一条消息会被Kafka路由到一个分区存放，各个分区内的消息不会重复，单一分区内的消息有序<br>
+每个消费者组会得到全量数据，由消费者组内的消费者实例负载均衡的消费，具体是按分区消费</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/e0154a69632862f076f8c1b33c85314cfb25e30e" title='Last modified by constructor-md | 2025-06-04' target="_blank" rel="noopener">
+      <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
+      <span>2025-06-04</span>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+
+  <script>(function(){function e(e){const t=window.getSelection(),n=document.createRange();n.selectNodeContents(e),t.removeAllRanges(),t.addRange(n)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){if(window.getSelection().toString())return;e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#消息生产">消息生产</a>
+      <ul>
+        <li><a href="#分区策略">分区策略</a></li>
+        <li><a href="#可靠性参数">可靠性参数</a></li>
+        <li><a href="#性能优化参数">性能优化参数</a></li>
+        <li><a href="#其他配置">其他配置</a></li>
+      </ul>
+    </li>
+    <li><a href="#消息存储和分布">消息存储和分布</a>
+      <ul>
+        <li><a href="#分区">分区</a></li>
+        <li><a href="#副本">副本</a></li>
+        <li><a href="#isrin-sync-replicas">ISR（In-Sync Replicas）</a></li>
+        <li><a href="#故障切换">故障切换</a></li>
+        <li><a href="#脑裂问题">脑裂问题</a></li>
+        <li><a href="#底层高效读写">底层高效读写</a></li>
+      </ul>
+    </li>
+    <li><a href="#消息消费">消息消费</a>
+      <ul>
+        <li><a href="#消费者组">消费者组</a></li>
+        <li><a href="#分区分配策略">分区分配策略</a></li>
+        <li><a href="#广播消息">广播消息</a></li>
+        <li><a href="#消息拉取模式">消息拉取模式</a></li>
+        <li><a href="#如何保证消费顺序性">如何保证消费顺序性</a></li>
+        <li><a href="#如何避免重复消费幂等性">如何避免重复消费（幂等性）</a></li>
+        <li><a href="#如何实现事务消息">如何实现事务消息</a></li>
+      </ul>
+    </li>
+    <li><a href="#消息清理策略">消息清理策略</a>
+      <ul>
+        <li><a href="#保留策略">保留策略</a></li>
+        <li><a href="#日志压缩">日志压缩</a></li>
+        <li><a href="#清理触发机制">清理触发机制</a></li>
+      </ul>
+    </li>
+    <li><a href="#综论-1">综论</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

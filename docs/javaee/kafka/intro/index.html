@@ -4,79 +4,88 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="
-  ConcurrentHashMap
+  简介
   #
 
-是一个支持高并发更新和查询的哈希表，基于 HashMap 实现
-HashMap 本身没有对多线程情况进行线程安全的处理 
-如果改用 HashTable 或者 Collections.synchronizedMap，则会对整个容器进行加锁，通知时间的其他操作都会被阻塞
-但是 ConcurrentHashMap 不对整个容器加锁，而是对一小部分加锁，不影响其他位置的操作
+Kafka是一种分布式流事件处理平台
+最初由LinkedIn开发，现在是Apache基金会的一部分
+核心功能包括：消息队列、流处理和数据集成
+具备高吞吐量、低延迟、可扩展和高容错性
 
-  数据结构
-  #
-
-
-  JDK1.8 以前：Segement&#43;ReentranLock（分段锁）
+  主要应用场景
   #
 
 
-由 HashMap 实现的 Segment 组成，实际是多段的 HashMap。可以理解为 ConcurrentHashMap 中有一个 Segement 数组，每个 Segement 就是一个 HashMap。
-采用分段锁的思想。写操作时，通过只锁涉及到的 Segment 的方式，保证修改的线程安全，同时不影响其它部分的并发操作。
-Segment 内部进行扩容，和 HashMap 的扩容逻辑相似，先生成新数组，然后转移元素到新数组中。
-每个 Segment 单独扩容，互不干扰。是否需要扩容也是 Segment 内部单独判断，是否超过阈值
-默认创建 16 个 Segment，即默认最多允许并发 16 个不同的写
-并发度是Segment数量，比较固定
+消息队列
+用作高吞吐量的消息系统，将消息从一个系统传递到另一个系统
+日志收集
+集中收起日志数据，然后通过Kafka传递到是实时监控系统或存储系统
+流计算
+处理实时数据流，将数据传递给实时计算系统，如Apache Strom或 Apache Flink
+事件溯源
+记录时间发生的历史，以便稍后进行数据回溯或重新处理
+Metrics收集和监控
+收集来自不同服务的监控指标，统一存储和处理
+
+Kafka设计理念与传统消息队列（如RabbitMQ）有所不同。
+Kafka更侧重于处理大规模数据流、支持高吞吐量和持久化存储。通常用于处理日志、监控数据等大规模数据流
+传统消息队列更多侧重于短生命周期的消息传递和任务调度。通常用于任务队列、队列服务等场景
+Kafka能在大数据生态系统中占据一席之地，归功于其独特设计和多个技术特点
+
+Kafka采用分区（Partition）和副本（Replica）的策略。每个主题（Topic）可以分成多个分区，每个分区可以有多个副本，即使某些节点出现故障，仍然可以保证数据的高可用和持久性。使得Kafka能够轻松应对大量数据的并发写入和读取
+Kafka的高吞吐量和低延迟主要得益于其高效的IO模型。Kafka将数据写入操作进行顺序追加，避免磁盘的随机读写，极大提高了写入性能。此外Kafka采用了零拷贝（Zero-Copy）的技术，可以大幅提升数据传输效率，从而降低延迟
+在流处理方面，Kafka有强大的流处理API&ndash;Kafka Streams。这个API允许开发者使用简单的编程莫辛纳甘创建复杂的流处理应用，而不必依赖外部独立的流处理框架。
+另外，Kafka Connect是Kafka用来进行数据继承的工具。它提供了各种各样的连接器（Connectors），可以轻松的将数据从外部系统导入Kafka，或者将Kafka中的数据导出到外部系统
 
 
-  Segment 实现的弊端
+  基本架构组成
   #
 
+Kafka基本架构主要包括：Producer、Consumer、Broker 和 Zookeeper
 
-寻找元素需要两次 Hash
-提供了并发级别的默认设置，默认 16 个 Segment，无法根据实际场景动态调整，但是不一定适用于大部分场景，最好是让用户自己评估需要多少把锁
-存储成本比 HashMap 高，每个 Segment 最小容量为 2，默认并发级别 16，假如只需要存储 16 个元素，那么会建立一个 32 容量的 ConcurrentHashMap 来存
-
-
-  JDK1.8 以后：Node&#43;Synchronized&#43;CAS
-  #
-
-
-采用 Node 数组&#43;链表/红黑树的数据结构（与HashMap高度相似 Node也只是一个数据节点）
-当链表长度超过 8 且数组长度 ≥ 64 时，链表转换为红黑树，提升查询效率
-每次操作某个槽位，都以该槽位的第一个元素作为锁，通过 synchronized 加锁，其他节点内仍可并发。锁粒度降到最低
-依赖 JVM 对 synchronized 的轻量级锁优化，性能优于显式 ReentrantLock
-槽位为空时（无锁写入），通过 CAS 原子操作直接写入数据
-移除 Segment，降低锁粒度、减少内存开销和哈希计算次数
-无锁读：通过 volatile 修饰的 Node 数组保证可见性，直接读取头节点。若为链表，遍历链表；若为红黑树，通过树结构查找
-并发度是理论上限为数组长度，随着数据变化动态调整
-
-
-  put 操作流程
-  #
-
-
-数组是否初始化，没有则初始化数组
-插入位置是否为空，是则使用 CAS 写入，size&#43;1 并检查是否需要扩容
-是否正在扩容，是则协助扩容，扩容完毕后再从头判断起
-当前节点加锁，插入数据，解锁，szie&#43;1 并检查是否需要扩容
+Producer
+消息生产者，将数据发布到Kafka特定Topic上。客户端可以指定消费者发送的主题数据的分区和副本策略
+Consumer
+消息消费者，从Kafka的Topic中读取数据。消费者可以属于某个消费者组（Consumer Group），消费者组内的消费者，每个只会消费一个主题的一个消息，不会重复消费，可以让多个消费者平衡复杂读取数据
+Broker
+消息代理，也就是Kafka集群的服务节点。负责消息的存储和管理，集群可以包含一个或多个Broker，负责接收、存储、发送数据
+Zookeeper（有废弃Zookeeper的版本）
+协调器，用于Kafka的愤怒不是协调和管理任务，比如存储Broker的元数据信息、分区列表、Leader等。Zookeeper来确保Kafka集群的高可用性和一致性
 ">
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#343a40">
-<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javase/collection/ConcurrentHashMap/">
+<meta name="color-scheme" content="light dark"><meta property="og:url" content="https://constructor-md.github.io/codestack/docs/javaee/kafka/intro/">
   <meta property="og:site_name" content="CodeStack">
-  <meta property="og:title" content="ConcurrentHashMap">
-  <meta property="og:description" content="ConcurrentHashMap#是一个支持高并发更新和查询的哈希表，基于 HashMap 实现
-HashMap 本身没有对多线程情况进行线程安全的处理 如果改用 HashTable 或者 Collections.synchronizedMap，则会对整个容器进行加锁，通知时间的其他操作都会被阻塞
-但是 ConcurrentHashMap 不对整个容器加锁，而是对一小部分加锁，不影响其他位置的操作
-数据结构#JDK1.8 以前：Segement&#43;ReentranLock（分段锁）#由 HashMap 实现的 Segment 组成，实际是多段的 HashMap。可以理解为 ConcurrentHashMap 中有一个 Segement 数组，每个 Segement 就是一个 HashMap。 采用分段锁的思想。写操作时，通过只锁涉及到的 Segment 的方式，保证修改的线程安全，同时不影响其它部分的并发操作。 Segment 内部进行扩容，和 HashMap 的扩容逻辑相似，先生成新数组，然后转移元素到新数组中。 每个 Segment 单独扩容，互不干扰。是否需要扩容也是 Segment 内部单独判断，是否超过阈值 默认创建 16 个 Segment，即默认最多允许并发 16 个不同的写 并发度是Segment数量，比较固定 Segment 实现的弊端#寻找元素需要两次 Hash 提供了并发级别的默认设置，默认 16 个 Segment，无法根据实际场景动态调整，但是不一定适用于大部分场景，最好是让用户自己评估需要多少把锁 存储成本比 HashMap 高，每个 Segment 最小容量为 2，默认并发级别 16，假如只需要存储 16 个元素，那么会建立一个 32 容量的 ConcurrentHashMap 来存 JDK1.8 以后：Node&#43;Synchronized&#43;CAS#采用 Node 数组&#43;链表/红黑树的数据结构（与HashMap高度相似 Node也只是一个数据节点） 当链表长度超过 8 且数组长度 ≥ 64 时，链表转换为红黑树，提升查询效率 每次操作某个槽位，都以该槽位的第一个元素作为锁，通过 synchronized 加锁，其他节点内仍可并发。锁粒度降到最低 依赖 JVM 对 synchronized 的轻量级锁优化，性能优于显式 ReentrantLock 槽位为空时（无锁写入），通过 CAS 原子操作直接写入数据 移除 Segment，降低锁粒度、减少内存开销和哈希计算次数 无锁读：通过 volatile 修饰的 Node 数组保证可见性，直接读取头节点。若为链表，遍历链表；若为红黑树，通过树结构查找 并发度是理论上限为数组长度，随着数据变化动态调整 put 操作流程#数组是否初始化，没有则初始化数组 插入位置是否为空，是则使用 CAS 写入，size&#43;1 并检查是否需要扩容 是否正在扩容，是则协助扩容，扩容完毕后再从头判断起 当前节点加锁，插入数据，解锁，szie&#43;1 并检查是否需要扩容">
+  <meta property="og:title" content="简介">
+  <meta property="og:description" content="简介#Kafka是一种分布式流事件处理平台
+最初由LinkedIn开发，现在是Apache基金会的一部分
+核心功能包括：消息队列、流处理和数据集成
+具备高吞吐量、低延迟、可扩展和高容错性
+主要应用场景#消息队列
+用作高吞吐量的消息系统，将消息从一个系统传递到另一个系统 日志收集
+集中收起日志数据，然后通过Kafka传递到是实时监控系统或存储系统 流计算
+处理实时数据流，将数据传递给实时计算系统，如Apache Strom或 Apache Flink 事件溯源
+记录时间发生的历史，以便稍后进行数据回溯或重新处理 Metrics收集和监控
+收集来自不同服务的监控指标，统一存储和处理 Kafka设计理念与传统消息队列（如RabbitMQ）有所不同。
+Kafka更侧重于处理大规模数据流、支持高吞吐量和持久化存储。通常用于处理日志、监控数据等大规模数据流
+传统消息队列更多侧重于短生命周期的消息传递和任务调度。通常用于任务队列、队列服务等场景
+Kafka能在大数据生态系统中占据一席之地，归功于其独特设计和多个技术特点
+Kafka采用分区（Partition）和副本（Replica）的策略。每个主题（Topic）可以分成多个分区，每个分区可以有多个副本，即使某些节点出现故障，仍然可以保证数据的高可用和持久性。使得Kafka能够轻松应对大量数据的并发写入和读取 Kafka的高吞吐量和低延迟主要得益于其高效的IO模型。Kafka将数据写入操作进行顺序追加，避免磁盘的随机读写，极大提高了写入性能。此外Kafka采用了零拷贝（Zero-Copy）的技术，可以大幅提升数据传输效率，从而降低延迟
+在流处理方面，Kafka有强大的流处理API–Kafka Streams。这个API允许开发者使用简单的编程莫辛纳甘创建复杂的流处理应用，而不必依赖外部独立的流处理框架。
+另外，Kafka Connect是Kafka用来进行数据继承的工具。它提供了各种各样的连接器（Connectors），可以轻松的将数据从外部系统导入Kafka，或者将Kafka中的数据导出到外部系统 基本架构组成#Kafka基本架构主要包括：Producer、Consumer、Broker 和 Zookeeper
+Producer
+消息生产者，将数据发布到Kafka特定Topic上。客户端可以指定消费者发送的主题数据的分区和副本策略 Consumer
+消息消费者，从Kafka的Topic中读取数据。消费者可以属于某个消费者组（Consumer Group），消费者组内的消费者，每个只会消费一个主题的一个消息，不会重复消费，可以让多个消费者平衡复杂读取数据 Broker
+消息代理，也就是Kafka集群的服务节点。负责消息的存储和管理，集群可以包含一个或多个Broker，负责接收、存储、发送数据 Zookeeper（有废弃Zookeeper的版本）
+协调器，用于Kafka的愤怒不是协调和管理任务，比如存储Broker的元数据信息、分区列表、Leader等。Zookeeper来确保Kafka集群的高可用性和一致性">
   <meta property="og:locale" content="zh_CN">
   <meta property="og:type" content="article">
     <meta property="article:section" content="docs">
-    <meta property="article:modified_time" content="2025-05-28T11:18:16+08:00">
-<title>ConcurrentHashMap | CodeStack</title>
+    <meta property="article:modified_time" content="2025-06-04T23:23:40+08:00">
+<title>简介 | CodeStack</title>
 <link rel="icon" href="/codestack/favicon.png" >
 <link rel="manifest" href="/codestack/manifest.json">
-<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javase/collection/ConcurrentHashMap/">
+<link rel="canonical" href="https://constructor-md.github.io/codestack/docs/javaee/kafka/intro/">
 <link rel="stylesheet" href="/codestack/book.min.a7616cf2799b58bddffce9438e31fdbfc6393687cfc0950a4a17cd1cce7e35f6.css" integrity="sha256-p2Fs8nmbWL3f/OlDjjH9v8Y5NofPwJUKShfNHM5&#43;NfY=" crossorigin="anonymous">
   <script defer src="/codestack/fuse.min.js"></script>
   <script defer src="/codestack/en.search.min.e167e55e922fb8d6dd8233b5c66f4878e88a900492391a12bd2b70521d6d7899.js" integrity="sha256-4WflXpIvuNbdgjO1xm9IeOiKkASSORoSvStwUh1teJk=" crossorigin="anonymous"></script>
@@ -473,7 +482,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javaee/kafka/intro/" class="">简介</a>
+    <a href="/codestack/docs/javaee/kafka/intro/" class="active">简介</a>
   
 
         </li>
@@ -784,7 +793,7 @@ https://github.com/alex-shpak/hugo-book
   
 
   
-    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="active">ConcurrentHashMap</a>
+    <a href="/codestack/docs/javase/collection/ConcurrentHashMap/" class="">ConcurrentHashMap</a>
   
 
         </li>
@@ -1167,7 +1176,7 @@ https://github.com/alex-shpak/hugo-book
     <img src="/codestack/svg/menu.svg" class="book-icon" alt="Menu" />
   </label>
 
-  <h3>ConcurrentHashMap</h3>
+  <h3>简介</h3>
 
   <label for="toc-control">
     
@@ -1183,12 +1192,8 @@ https://github.com/alex-shpak/hugo-book
   
 <nav id="TableOfContents">
   <ul>
-    <li><a href="#数据结构">数据结构</a>
-      <ul>
-        <li><a href="#jdk18-以前segementreentranlock分段锁">JDK1.8 以前：Segement+ReentranLock（分段锁）</a></li>
-        <li><a href="#jdk18-以后nodesynchronizedcas">JDK1.8 以后：Node+Synchronized+CAS</a></li>
-      </ul>
-    </li>
+    <li><a href="#主要应用场景">主要应用场景</a></li>
+    <li><a href="#基本架构组成">基本架构组成</a></li>
   </ul>
 </nav>
 
@@ -1201,62 +1206,54 @@ https://github.com/alex-shpak/hugo-book
 
       
       
-  <article class="markdown book-article"><h1 id="concurrenthashmap">
-  ConcurrentHashMap
-  <a class="anchor" href="#concurrenthashmap">#</a>
+  <article class="markdown book-article"><h1 id="简介">
+  简介
+  <a class="anchor" href="#%e7%ae%80%e4%bb%8b">#</a>
 </h1>
-<p>是一个支持高并发更新和查询的哈希表，基于 HashMap 实现<br>
-HashMap 本身没有对多线程情况进行线程安全的处理 <br>
-如果改用 HashTable 或者 Collections.synchronizedMap，则会对整个容器进行加锁，通知时间的其他操作都会被阻塞<br>
-但是 ConcurrentHashMap 不对整个容器加锁，而是对一小部分加锁，不影响其他位置的操作</p>
-<h2 id="数据结构">
-  数据结构
-  <a class="anchor" href="#%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84">#</a>
+<p>Kafka是一种分布式流事件处理平台<br>
+最初由LinkedIn开发，现在是Apache基金会的一部分<br>
+核心功能包括：消息队列、流处理和数据集成<br>
+具备高吞吐量、低延迟、可扩展和高容错性</p>
+<h2 id="主要应用场景">
+  主要应用场景
+  <a class="anchor" href="#%e4%b8%bb%e8%a6%81%e5%ba%94%e7%94%a8%e5%9c%ba%e6%99%af">#</a>
 </h2>
-<h3 id="jdk18-以前segementreentranlock分段锁">
-  JDK1.8 以前：Segement+ReentranLock（分段锁）
-  <a class="anchor" href="#jdk18-%e4%bb%a5%e5%89%8dsegementreentranlock%e5%88%86%e6%ae%b5%e9%94%81">#</a>
-</h3>
 <ol>
-<li>由 HashMap 实现的 Segment 组成，实际是多段的 HashMap。可以理解为 ConcurrentHashMap 中有一个 Segement 数组，每个 Segement 就是一个 HashMap。</li>
-<li>采用分段锁的思想。写操作时，通过只锁涉及到的 Segment 的方式，保证修改的线程安全，同时不影响其它部分的并发操作。</li>
-<li>Segment 内部进行扩容，和 HashMap 的扩容逻辑相似，先生成新数组，然后转移元素到新数组中。</li>
-<li>每个 Segment 单独扩容，互不干扰。是否需要扩容也是 Segment 内部单独判断，是否超过阈值</li>
-<li>默认创建 16 个 Segment，即默认最多允许并发 16 个不同的写</li>
-<li>并发度是Segment数量，比较固定</li>
+<li>消息队列<br>
+用作高吞吐量的消息系统，将消息从一个系统传递到另一个系统</li>
+<li>日志收集<br>
+集中收起日志数据，然后通过Kafka传递到是实时监控系统或存储系统</li>
+<li>流计算<br>
+处理实时数据流，将数据传递给实时计算系统，如Apache Strom或 Apache Flink</li>
+<li>事件溯源<br>
+记录时间发生的历史，以便稍后进行数据回溯或重新处理</li>
+<li>Metrics收集和监控<br>
+收集来自不同服务的监控指标，统一存储和处理</li>
 </ol>
-<h4 id="segment-实现的弊端">
-  Segment 实现的弊端
-  <a class="anchor" href="#segment-%e5%ae%9e%e7%8e%b0%e7%9a%84%e5%bc%8a%e7%ab%af">#</a>
-</h4>
+<p>Kafka设计理念与传统消息队列（如RabbitMQ）有所不同。<br>
+Kafka更侧重于处理大规模数据流、支持高吞吐量和持久化存储。通常用于处理日志、监控数据等大规模数据流<br>
+传统消息队列更多侧重于短生命周期的消息传递和任务调度。通常用于任务队列、队列服务等场景</p>
+<p>Kafka能在大数据生态系统中占据一席之地，归功于其独特设计和多个技术特点</p>
 <ol>
-<li>寻找元素需要两次 Hash</li>
-<li>提供了并发级别的默认设置，默认 16 个 Segment，无法根据实际场景动态调整，但是不一定适用于大部分场景，最好是让用户自己评估需要多少把锁</li>
-<li>存储成本比 HashMap 高，每个 Segment 最小容量为 2，默认并发级别 16，假如只需要存储 16 个元素，那么会建立一个 32 容量的 ConcurrentHashMap 来存</li>
+<li>Kafka采用分区（Partition）和副本（Replica）的策略。每个主题（Topic）可以分成多个分区，每个分区可以有多个副本，即使某些节点出现故障，仍然可以保证数据的高可用和持久性。使得Kafka能够轻松应对大量数据的并发写入和读取</li>
+<li>Kafka的高吞吐量和低延迟主要得益于其高效的IO模型。Kafka将数据写入操作进行顺序追加，避免磁盘的随机读写，极大提高了写入性能。此外Kafka采用了零拷贝（Zero-Copy）的技术，可以大幅提升数据传输效率，从而降低延迟<br>
+在流处理方面，Kafka有强大的流处理API&ndash;Kafka Streams。这个API允许开发者使用简单的编程莫辛纳甘创建复杂的流处理应用，而不必依赖外部独立的流处理框架。<br>
+另外，Kafka Connect是Kafka用来进行数据继承的工具。它提供了各种各样的连接器（Connectors），可以轻松的将数据从外部系统导入Kafka，或者将Kafka中的数据导出到外部系统</li>
 </ol>
-<h3 id="jdk18-以后nodesynchronizedcas">
-  JDK1.8 以后：Node+Synchronized+CAS
-  <a class="anchor" href="#jdk18-%e4%bb%a5%e5%90%8enodesynchronizedcas">#</a>
-</h3>
+<h2 id="基本架构组成">
+  基本架构组成
+  <a class="anchor" href="#%e5%9f%ba%e6%9c%ac%e6%9e%b6%e6%9e%84%e7%bb%84%e6%88%90">#</a>
+</h2>
+<p>Kafka基本架构主要包括：Producer、Consumer、Broker 和 Zookeeper</p>
 <ol>
-<li>采用 Node 数组+链表/红黑树的数据结构（与HashMap高度相似 Node也只是一个数据节点）</li>
-<li>当链表长度超过 8 且数组长度 ≥ 64 时，链表转换为红黑树，提升查询效率</li>
-<li>每次操作某个槽位，都以该槽位的第一个元素作为锁，通过 synchronized 加锁，其他节点内仍可并发。锁粒度降到最低</li>
-<li>依赖 JVM 对 synchronized 的轻量级锁优化，性能优于显式 ReentrantLock</li>
-<li>槽位为空时（无锁写入），通过 CAS 原子操作直接写入数据</li>
-<li>移除 Segment，降低锁粒度、减少内存开销和哈希计算次数</li>
-<li>无锁读：通过 volatile 修饰的 Node 数组保证可见性，直接读取头节点。若为链表，遍历链表；若为红黑树，通过树结构查找</li>
-<li>并发度是理论上限为数组长度，随着数据变化动态调整</li>
-</ol>
-<h4 id="put-操作流程">
-  put 操作流程
-  <a class="anchor" href="#put-%e6%93%8d%e4%bd%9c%e6%b5%81%e7%a8%8b">#</a>
-</h4>
-<ol>
-<li>数组是否初始化，没有则初始化数组</li>
-<li>插入位置是否为空，是则使用 CAS 写入，size+1 并检查是否需要扩容</li>
-<li>是否正在扩容，是则协助扩容，扩容完毕后再从头判断起</li>
-<li>当前节点加锁，插入数据，解锁，szie+1 并检查是否需要扩容</li>
+<li>Producer<br>
+消息生产者，将数据发布到Kafka特定Topic上。客户端可以指定消费者发送的主题数据的分区和副本策略</li>
+<li>Consumer<br>
+消息消费者，从Kafka的Topic中读取数据。消费者可以属于某个消费者组（Consumer Group），消费者组内的消费者，每个只会消费一个主题的一个消息，不会重复消费，可以让多个消费者平衡复杂读取数据</li>
+<li>Broker<br>
+消息代理，也就是Kafka集群的服务节点。负责消息的存储和管理，集群可以包含一个或多个Broker，负责接收、存储、发送数据</li>
+<li>Zookeeper（有废弃Zookeeper的版本）<br>
+协调器，用于Kafka的愤怒不是协调和管理任务，比如存储Broker的元数据信息、分区列表、Leader等。Zookeeper来确保Kafka集群的高可用性和一致性</li>
 </ol>
 </article>
  
@@ -1267,9 +1264,9 @@ HashMap 本身没有对多线程情况进行线程安全的处理 <br>
   <div class="flex flex-wrap justify-between">
 
 
-  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/7baf6f50380ee44af8b00827f8199cbe893b859c" title='Last modified by constructor-md | 2025-05-28' target="_blank" rel="noopener">
+  <div><a class="flex align-center" href="https://github.com/constructor-md/codestack/commit/e0154a69632862f076f8c1b33c85314cfb25e30e" title='Last modified by constructor-md | 2025-06-04' target="_blank" rel="noopener">
       <img src="/codestack/svg/calendar.svg" class="book-icon" alt="" />
-      <span>2025-05-28</span>
+      <span>2025-06-04</span>
     </a>
   </div>
 
@@ -1305,12 +1302,8 @@ HashMap 本身没有对多线程情况进行线程安全的处理 <br>
   
 <nav id="TableOfContents">
   <ul>
-    <li><a href="#数据结构">数据结构</a>
-      <ul>
-        <li><a href="#jdk18-以前segementreentranlock分段锁">JDK1.8 以前：Segement+ReentranLock（分段锁）</a></li>
-        <li><a href="#jdk18-以后nodesynchronizedcas">JDK1.8 以后：Node+Synchronized+CAS</a></li>
-      </ul>
-    </li>
+    <li><a href="#主要应用场景">主要应用场景</a></li>
+    <li><a href="#基本架构组成">基本架构组成</a></li>
   </ul>
 </nav>
 
